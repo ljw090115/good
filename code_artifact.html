@@ -1,0 +1,2051 @@
+<!DOCTYPE html>
+<html lang="ko" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>거시경제 자산배분 & 스피드 단타 라이프스타일 시뮬레이터 4.0</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- FontAwesome CDN -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#f0fdf4',
+              500: '#22c55e',
+              600: '#16a34a',
+              900: '#14532d',
+            },
+            gold: {
+              400: '#fbbf24',
+              500: '#f59e0b',
+              600: '#d97706'
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #090d16;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #1e293b;
+      border-radius: 3px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #334155;
+    }
+    .neon-glow-gold {
+      box-shadow: 0 0 20px rgba(245, 158, 11, 0.4);
+    }
+    .neon-glow-cyan {
+      box-shadow: 0 0 20px rgba(6, 182, 212, 0.4);
+    }
+    .neon-glow-rose {
+      box-shadow: 0 0 20px rgba(244, 63, 94, 0.4);
+    }
+    .glass-card {
+      background: rgba(15, 23, 42, 0.85);
+      backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    @keyframes pulse-fast {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.85; transform: scale(1.03); }
+    }
+    .animate-pulse-fast {
+      animation: pulse-fast 0.6s infinite ease-in-out;
+    }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 font-sans min-h-screen flex flex-col antialiased selection:bg-amber-500 selection:text-black">
+
+  <!-- Toast Notification Container -->
+  <div id="toastContainer" class="fixed top-5 right-5 z-50 flex flex-col gap-2 max-w-sm pointer-events-none"></div>
+
+  <!-- ACHIEVEMENT UNLOCK OVERLAY MODAL -->
+  <div id="achievementModal" class="fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md hidden flex items-center justify-center p-4">
+    <div class="bg-gradient-to-b from-amber-950/90 via-slate-900 to-slate-950 border-2 border-amber-500 rounded-3xl p-6 max-w-md w-full text-center space-y-4 neon-glow-gold transform transition-all duration-300 scale-95 opacity-0" id="achievementBox">
+      <div class="w-20 h-20 mx-auto rounded-full bg-amber-500/20 border-2 border-amber-400 flex items-center justify-center text-4xl text-amber-400 animate-bounce">
+        <i id="achieveModalIcon" class="fa-solid fa-trophy"></i>
+      </div>
+      <div>
+        <span class="px-3 py-1 rounded-full bg-amber-500 text-black font-black text-xs uppercase tracking-wider">도전과제 달성!</span>
+        <h2 id="achieveModalTitle" class="text-2xl font-black text-white mt-2">【연금술사】</h2>
+        <p id="achieveModalDesc" class="text-xs text-slate-300 mt-1">포트폴리오 수익률 +100% 이상을 달성했습니다!</p>
+      </div>
+      <div class="pt-2">
+        <button onclick="closeAchievementModal()" class="w-full py-2.5 bg-amber-500 hover:bg-amber-400 text-black font-extrabold text-xs rounded-xl shadow-lg transition-all">
+          확인 및 칭호 보상 받기
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CHARACTER SELECTION OVERLAY MODAL -->
+  <div id="charSelectModal" class="fixed inset-0 z-50 bg-slate-950/95 backdrop-blur-2xl flex items-center justify-center p-4 overflow-y-auto">
+    <div class="max-w-5xl w-full flex flex-col gap-6 my-auto py-6">
+      <div class="text-center space-y-2">
+        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-bold">
+          <i class="fa-solid fa-crown text-amber-400"></i> 투자 페르소나 선택
+        </div>
+        <h1 class="text-2xl sm:text-4xl font-extrabold text-white tracking-tight">투자자 캐릭터를 선택하세요</h1>
+        <p class="text-xs sm:text-sm text-slate-400 max-w-2xl mx-auto">
+          캐릭터별 시각적 아바타와 고유 패시브 스킬이 부여되며, 거시경제 위기 및 단타 미니게임 보너스가 제공됩니다.
+        </p>
+      </div>
+
+      <!-- Character Visual Cards Grid -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        
+        <!-- Character 1: Warren Buffett -->
+        <div onclick="selectCharacter('buffett')" class="group relative bg-slate-900 border border-slate-800 hover:border-amber-500/80 rounded-2xl overflow-hidden cursor-pointer transition-all duration-300 hover:-translate-y-1.5 hover:shadow-2xl hover:shadow-amber-950/50 flex flex-col justify-between">
+          <div class="relative h-48 w-full overflow-hidden">
+            <img src="https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=600&q=80" 
+                 onerror="this.src='https://placehold.co/600x600/1e293b/f59e0b?text=Value+Investor'"
+                 alt="오마하의 가치 투자자" 
+                 class="w-full h-full object-cover object-top transition-transform duration-500 group-hover:scale-105">
+            <div class="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/40 to-transparent"></div>
+            <span class="absolute top-3 left-3 px-2.5 py-0.5 rounded-full bg-amber-500/80 text-black text-[10px] font-extrabold uppercase">
+              가치 투자 거장
+            </span>
+          </div>
+          <div class="p-4 flex-grow flex flex-col justify-between">
+            <div>
+              <h3 class="text-base font-bold text-white group-hover:text-amber-400 transition-colors">오마하의 가치 투자자</h3>
+              <p class="text-xs text-slate-400 mt-1.5 leading-relaxed">
+                복리와 우량 기업 가치 분석 선호. 안정적인 현금 흐름과 배당주, 무위험 국채에서 수익 가산점을 얻습니다.
+              </p>
+            </div>
+            <div class="mt-4 pt-3 border-t border-slate-800 space-y-1 text-[11px]">
+              <div class="text-emerald-400 font-semibold flex items-center gap-1">
+                <i class="fa-solid fa-bolt text-[10px]"></i> 패시브: 배당/채권 이자 +1.5%
+              </div>
+              <div class="text-slate-400">시작 자본: ₩ 100,000,000</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Character 2: Ray Dalio -->
+        <div onclick="selectCharacter('dalio')" class="group relative bg-slate-900 border border-slate-800 hover:border-indigo-500/80 rounded-2xl overflow-hidden cursor-pointer transition-all duration-300 hover:-translate-y-1.5 hover:shadow-2xl hover:shadow-indigo-950/50 flex flex-col justify-between">
+          <div class="relative h-48 w-full overflow-hidden">
+            <img src="https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&w=600&q=80" 
+                 onerror="this.src='https://placehold.co/600x600/1e293b/6366f1?text=Quant+Macro'"
+                 alt="올웨더 헤지펀드 매니저" 
+                 class="w-full h-full object-cover object-top transition-transform duration-500 group-hover:scale-105">
+            <div class="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/40 to-transparent"></div>
+            <span class="absolute top-3 left-3 px-2.5 py-0.5 rounded-full bg-indigo-500/80 text-white text-[10px] font-extrabold uppercase">
+              퀀트 헤지펀드
+            </span>
+          </div>
+          <div class="p-4 flex-grow flex flex-col justify-between">
+            <div>
+              <h3 class="text-base font-bold text-white group-hover:text-indigo-400 transition-colors">올웨더 헤지펀드 매니저</h3>
+              <p class="text-xs text-slate-400 mt-1.5 leading-relaxed">
+                모든 거시경제 계절을 견디는 올웨더 전략의 창시자. 경제 충격 발생 시 낙폭(MDD)을 획기적으로 방어합니다.
+              </p>
+            </div>
+            <div class="mt-4 pt-3 border-t border-slate-800 space-y-1 text-[11px]">
+              <div class="text-indigo-400 font-semibold flex items-center gap-1">
+                <i class="fa-solid fa-shield-halved text-[10px]"></i> 패시브: 위기 손실 -20% 방어
+              </div>
+              <div class="text-slate-400">시작 자본: ₩ 100,000,000</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Character 3: Silicon Valley Angel -->
+        <div onclick="selectCharacter('angel')" class="group relative bg-slate-900 border border-slate-800 hover:border-blue-500/80 rounded-2xl overflow-hidden cursor-pointer transition-all duration-300 hover:-translate-y-1.5 hover:shadow-2xl hover:shadow-blue-950/50 flex flex-col justify-between">
+          <div class="relative h-48 w-full overflow-hidden">
+            <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=600&q=80" 
+                 onerror="this.src='https://placehold.co/600x600/1e293b/3b82f6?text=Tech+Angel'"
+                 alt="실리콘밸리 엔젤 투자자" 
+                 class="w-full h-full object-cover object-top transition-transform duration-500 group-hover:scale-105">
+            <div class="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/40 to-transparent"></div>
+            <span class="absolute top-3 left-3 px-2.5 py-0.5 rounded-full bg-blue-500/80 text-white text-[10px] font-extrabold uppercase">
+              테크 VC 벤처가
+            </span>
+          </div>
+          <div class="p-4 flex-grow flex flex-col justify-between">
+            <div>
+              <h3 class="text-base font-bold text-white group-hover:text-blue-400 transition-colors">실리콘밸리 엔젤 투자자</h3>
+              <p class="text-xs text-slate-400 mt-1.5 leading-relaxed">
+                AI와 파괴적 기술 혁신주에 집중 투자. 기술주 폭등 상승장세에서 높은 알파 수익을 창출합니다.
+              </p>
+            </div>
+            <div class="mt-4 pt-3 border-t border-slate-800 space-y-1 text-[11px]">
+              <div class="text-blue-400 font-semibold flex items-center gap-1">
+                <i class="fa-solid fa-chart-line text-[10px]"></i> 패시브: 성장주 상승 시 +3.0% 보너스
+              </div>
+              <div class="text-slate-400">시작 자본: ₩ 100,000,000</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Character 4: Wall Street Momentum Trader -->
+        <div onclick="selectCharacter('trader')" class="group relative bg-slate-900 border border-slate-800 hover:border-rose-500/80 rounded-2xl overflow-hidden cursor-pointer transition-all duration-300 hover:-translate-y-1.5 hover:shadow-2xl hover:shadow-rose-950/50 flex flex-col justify-between">
+          <div class="relative h-48 w-full overflow-hidden">
+            <img src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=600&q=80" 
+                 onerror="this.src='https://placehold.co/600x600/1e293b/f43f5e?text=Momentum+Trader'"
+                 alt="월가 모멘텀 트레이더" 
+                 class="w-full h-full object-cover object-top transition-transform duration-500 group-hover:scale-105">
+            <div class="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/40 to-transparent"></div>
+            <span class="absolute top-3 left-3 px-2.5 py-0.5 rounded-full bg-rose-500/80 text-white text-[10px] font-extrabold uppercase">
+              모멘텀 트레이더
+            </span>
+          </div>
+          <div class="p-4 flex-grow flex flex-col justify-between">
+            <div>
+              <h3 class="text-base font-bold text-white group-hover:text-rose-400 transition-colors">월가 모멘텀 트레이더</h3>
+              <p class="text-xs text-slate-400 mt-1.5 leading-relaxed">
+                스피드 단타 및 변동성 자산 추종가. 30초 단타 미니게임 수익금에 +25% 추가 가산점이 적용됩니다.
+              </p>
+            </div>
+            <div class="mt-4 pt-3 border-t border-slate-800 space-y-1 text-[11px]">
+              <div class="text-rose-400 font-semibold flex items-center gap-1">
+                <i class="fa-solid fa-fire text-[10px]"></i> 패시브: 단타 미니게임 수익 +25%
+              </div>
+              <div class="text-slate-400">시작 자본: ₩ 100,000,000</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Header & Top Navigation Bar -->
+  <header class="border-b border-slate-800/80 bg-slate-900/90 backdrop-blur-md sticky top-0 z-40">
+    <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-4">
+      
+      <!-- Brand & Character Portrait Quick View -->
+      <div class="flex items-center gap-3">
+        <div class="relative w-11 h-11 rounded-xl overflow-hidden border border-amber-500/40 shadow-lg flex-shrink-0">
+          <img id="charHeaderImg" src="https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=600&q=80" 
+               onerror="this.src='https://placehold.co/100x100/1e293b/f59e0b?text=User'"
+               alt="캐릭터 초상화" class="w-full h-full object-cover">
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="font-extrabold text-base text-white">거시경제 자산배분 & 스피드 단타 4.0</h1>
+            <span id="charTitleBadge" class="px-2 py-0.5 text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded-full">
+              동네 개미 투자자
+            </span>
+            <span id="equippedTitleTag" class="hidden px-2 py-0.5 text-[10px] font-black bg-gradient-to-r from-amber-500 to-rose-500 text-black rounded-full shadow">
+              【칭호 미장착】
+            </span>
+          </div>
+          <p id="charDescSub" class="text-xs text-slate-400">캐릭터: <span id="charNameText" class="text-slate-200 font-medium">오마하의 가치 투자자</span></p>
+        </div>
+      </div>
+
+      <!-- Navigation Tabs -->
+      <nav class="flex items-center gap-1 bg-slate-950 p-1 rounded-xl border border-slate-800 text-xs font-semibold overflow-x-auto">
+        <button onclick="switchTab('dashboard')" id="navDashBtn" class="px-3 py-1.5 rounded-lg bg-indigo-600 text-white transition-all flex items-center gap-1.5 whitespace-nowrap">
+          <i class="fa-solid fa-chart-pie"></i>
+          <span>자산 포트폴리오</span>
+        </button>
+        <button onclick="switchTab('daytrade')" id="navDaytradeBtn" class="px-3 py-1.5 rounded-lg text-slate-400 hover:text-white transition-all flex items-center gap-1.5 whitespace-nowrap relative">
+          <i class="fa-solid fa-bolt text-rose-400 animate-pulse"></i>
+          <span>30초 단타 미니게임</span>
+          <span class="px-1.5 py-0.2 text-[8px] font-black bg-rose-500 text-white rounded-full">HOT</span>
+        </button>
+        <button onclick="switchTab('achievements')" id="navAchieveBtn" class="px-3 py-1.5 rounded-lg text-slate-400 hover:text-white transition-all flex items-center gap-1.5 whitespace-nowrap">
+          <i class="fa-solid fa-trophy text-amber-400"></i>
+          <span>도전과제 & 칭호</span>
+          <span id="achieveUnlockedCount" class="px-1.5 py-0.2 text-[9px] bg-amber-500/20 text-amber-300 rounded-full border border-amber-500/30">0/7</span>
+        </button>
+        <button onclick="switchTab('shop')" id="navShopBtn" class="px-3 py-1.5 rounded-lg text-slate-400 hover:text-white transition-all flex items-center gap-1.5 whitespace-nowrap">
+          <i class="fa-solid fa-gem text-amber-400"></i>
+          <span>사치품 상점</span>
+        </button>
+        <button onclick="switchTab('garage')" id="navGarageBtn" class="px-3 py-1.5 rounded-lg text-slate-400 hover:text-white transition-all flex items-center gap-1.5 whitespace-nowrap">
+          <i class="fa-solid fa-warehouse text-emerald-400"></i>
+          <span>수집 갤러리</span>
+        </button>
+        <button onclick="switchTab('report')" id="navReportBtn" class="px-3 py-1.5 rounded-lg text-slate-400 hover:text-white transition-all flex items-center gap-1.5 whitespace-nowrap">
+          <i class="fa-solid fa-graduation-cap"></i>
+          <span>생기부 보고서</span>
+        </button>
+      </nav>
+
+      <!-- Action Control Buttons -->
+      <div class="flex items-center gap-2">
+        <button id="btnNextMonth" onclick="nextMonth()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-emerald-950 transition-all flex items-center gap-1.5 active:scale-95">
+          <span>다음 달 진행 (1개월)</span>
+          <i class="fa-solid fa-arrow-right text-[10px]"></i>
+        </button>
+        <button onclick="openCharModal()" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs transition-all border border-slate-700" title="캐릭터 변경">
+          <i class="fa-solid fa-user-gear"></i>
+        </button>
+        <button onclick="resetGame()" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs transition-all border border-slate-700" title="초기화">
+          <i class="fa-solid fa-rotate-right"></i>
+        </button>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- Key Dashboard Metrics Bar -->
+  <section class="bg-slate-900/60 border-b border-slate-800/80 py-3">
+    <div class="max-w-7xl mx-auto px-4 grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2.5">
+      <!-- Total Net Worth -->
+      <div class="bg-slate-950 p-2.5 rounded-xl border border-slate-800">
+        <div class="text-[10px] text-slate-400 font-medium">총자산 (Net Worth)</div>
+        <div id="uiTotalNetWorth" class="text-xs sm:text-sm font-bold text-white">₩ 100,000,000</div>
+        <div id="uiTotalReturn" class="text-[10px] font-semibold text-slate-400 mt-0.5">수익률 0.00%</div>
+      </div>
+      <!-- Real Net Worth -->
+      <div class="bg-slate-950 p-2.5 rounded-xl border border-slate-800">
+        <div class="text-[10px] text-slate-400 font-medium">실질자산 (CPI반영)</div>
+        <div id="uiRealNetWorth" class="text-xs sm:text-sm font-bold text-indigo-400">₩ 100,000,000</div>
+        <div id="uiRealReturn" class="text-[10px] font-semibold text-slate-400 mt-0.5">실질 0.00%</div>
+      </div>
+      <!-- Cash Balance -->
+      <div class="bg-slate-950 p-2.5 rounded-xl border border-slate-800">
+        <div class="text-[10px] text-slate-400 font-medium">보유 현금</div>
+        <div id="uiCash" class="text-xs sm:text-sm font-bold text-slate-200">₩ 100,000,000</div>
+        <div id="uiCashRatio" class="text-[10px] font-semibold text-slate-400 mt-0.5">비중 100.0%</div>
+      </div>
+      <!-- Luxury Score -->
+      <div class="bg-slate-950 p-2.5 rounded-xl border border-slate-800">
+        <div class="text-[10px] text-slate-400 font-medium">과시 지수 (Vanity)</div>
+        <div id="uiVanityScore" class="text-xs sm:text-sm font-bold text-amber-400">0 pt</div>
+        <div id="uiPrestigeLevel" class="text-[10px] font-semibold text-amber-300 mt-0.5">동네 개미</div>
+      </div>
+      <!-- Progress -->
+      <div class="bg-slate-950 p-2.5 rounded-xl border border-slate-800">
+        <div class="text-[10px] text-slate-400 font-medium">진행 개월</div>
+        <div id="uiMonth" class="text-xs sm:text-sm font-bold text-amber-400">1 / 24 개월</div>
+        <div class="w-full bg-slate-800 h-1 rounded-full mt-1 overflow-hidden">
+          <div id="uiMonthBar" class="bg-amber-400 h-full w-[4.16%] transition-all"></div>
+        </div>
+      </div>
+      <!-- Interest Rate -->
+      <div class="bg-slate-950 p-2.5 rounded-xl border border-slate-800">
+        <div class="text-[10px] text-slate-400 font-medium">기준금리</div>
+        <div id="uiInterestRate" class="text-xs sm:text-sm font-bold text-cyan-400">2.50%</div>
+        <div class="text-[10px] text-slate-500 mt-0.5">연율화 시중금리</div>
+      </div>
+      <!-- Inflation / CPI -->
+      <div class="bg-slate-950 p-2.5 rounded-xl border border-slate-800">
+        <div class="text-[10px] text-slate-400 font-medium">월 인플레이션</div>
+        <div id="uiInflationRate" class="text-xs sm:text-sm font-bold text-rose-400">2.10%</div>
+        <div id="uiCpi" class="text-[10px] font-semibold text-slate-400 mt-0.5">CPI 100.0</div>
+      </div>
+      <!-- Sharpe Ratio -->
+      <div class="bg-slate-950 p-2.5 rounded-xl border border-slate-800">
+        <div class="text-[10px] text-slate-400 font-medium">샤프 지수 (Sharpe)</div>
+        <div id="uiSharpe" class="text-xs sm:text-sm font-bold text-emerald-400">0.00</div>
+        <div id="uiMDDText" class="text-[10px] text-slate-500 mt-0.5">MDD 0.00%</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- TAB 1: INVESTMENT DASHBOARD -->
+  <main id="tabDashboard" class="max-w-7xl mx-auto px-4 py-5 flex-grow grid grid-cols-1 lg:grid-cols-12 gap-5 w-full">
+
+    <!-- Left Column: 10 Asset Trading Cards & Presets (7 Cols) -->
+    <section class="lg:col-span-7 flex flex-col gap-3.5">
+      
+      <!-- Preset Portfolio Allocators -->
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-3 flex flex-wrap items-center justify-between gap-2">
+        <span class="text-xs font-bold text-slate-300 flex items-center gap-1.5">
+          <i class="fa-solid fa-wand-magic-sparkles text-amber-400"></i> 포트폴리오 빠른 배분:
+        </span>
+        <div class="flex flex-wrap gap-1.5">
+          <button onclick="applyPreset('all_weather')" class="px-2.5 py-1 bg-slate-950 hover:bg-slate-800 text-indigo-300 border border-indigo-900/50 rounded-lg text-xs font-medium transition-all">
+            🛡️ 올웨더 (레이달리오)
+          </button>
+          <button onclick="applyPreset('growth_tech')" class="px-2.5 py-1 bg-slate-950 hover:bg-slate-800 text-blue-300 border border-blue-900/50 rounded-lg text-xs font-medium transition-all">
+            🚀 AI 테크 공격형
+          </button>
+          <button onclick="applyPreset('stagflation_proof')" class="px-2.5 py-1 bg-slate-950 hover:bg-slate-800 text-amber-300 border border-amber-900/50 rounded-lg text-xs font-medium transition-all">
+            🔥 금/원자재 헤지
+          </button>
+          <button onclick="applyPreset('safe_haven')" class="px-2.5 py-1 bg-slate-950 hover:bg-slate-800 text-emerald-300 border border-emerald-900/50 rounded-lg text-xs font-medium transition-all">
+            🏦 극단적 안전자산
+          </button>
+        </div>
+      </div>
+
+      <!-- Asset Cards Container Grid -->
+      <div id="assetCardsContainer" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <!-- Asset Cards generated dynamically by JS -->
+      </div>
+    </section>
+
+    <!-- Right Column: Macro Dynamics & Charts (5 Cols) -->
+    <section class="lg:col-span-5 flex flex-col gap-4">
+
+      <!-- Event Alert Box -->
+      <div id="eventCard" class="p-4 rounded-2xl border border-amber-500/30 bg-gradient-to-br from-amber-950/30 via-slate-900 to-slate-900 shadow-xl transition-all">
+        <div class="flex items-center justify-between mb-2">
+          <span id="eventBadge" class="px-2.5 py-0.5 text-xs font-bold rounded-md bg-amber-500/20 text-amber-300 border border-amber-500/40">
+            시작 국면
+          </span>
+          <span id="eventDate" class="text-xs font-mono text-slate-400">1년차 1월</span>
+        </div>
+        <h3 id="eventTitle" class="text-sm font-bold text-white mb-1">안정적 골디락스 성숙 국면</h3>
+        <p id="eventDesc" class="text-xs text-slate-300 leading-relaxed mb-2.5">
+          적정한 물가 상승과 경제 성장이 유지되고 있습니다. 거시경제 충격에 대비하여 10대 자산군을 적절히 배분하세요.
+        </p>
+      </div>
+
+      <!-- Scenario Triggers -->
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-3.5">
+        <div class="text-xs font-bold text-slate-300 mb-2 flex items-center justify-between">
+          <span><i class="fa-solid fa-sliders text-indigo-400 mr-1.5"></i>역사적 거시경제 충격 발동</span>
+          <span class="text-[10px] text-slate-500">클릭 시 즉시 시나리오 적용</span>
+        </div>
+        <div class="grid grid-cols-2 gap-1.5 text-xs">
+          <button onclick="triggerScenario('GREAT_DEPRESSION')" class="px-2.5 py-1.5 bg-slate-950 hover:bg-slate-800 text-rose-300 border border-rose-900/40 rounded-lg transition-all text-left truncate">
+            📉 1929 대공황
+          </button>
+          <button onclick="triggerScenario('STAGFLATION')" class="px-2.5 py-1.5 bg-slate-950 hover:bg-slate-800 text-amber-300 border border-amber-900/40 rounded-lg transition-all text-left truncate">
+            🔥 1970s 스태그플레이션
+          </button>
+          <button onclick="triggerScenario('FINANCIAL_CRISIS')" class="px-2.5 py-1.5 bg-slate-950 hover:bg-slate-800 text-rose-300 border border-rose-900/40 rounded-lg transition-all text-left truncate">
+            🏦 2008 금융위기
+          </button>
+          <button onclick="triggerScenario('LIQUIDITY_BOOM')" class="px-2.5 py-1.5 bg-slate-950 hover:bg-slate-800 text-emerald-300 border border-emerald-900/40 rounded-lg transition-all text-left truncate">
+            💵 2020 양적완화 붐
+          </button>
+          <button onclick="triggerScenario('RATE_HIKE_SHOCK')" class="px-2.5 py-1.5 bg-slate-950 hover:bg-slate-800 text-orange-300 border border-orange-900/40 rounded-lg transition-all text-left truncate">
+            ⚡ 2022 긴축&고금리
+          </button>
+          <button onclick="triggerScenario('AI_BOOM')" class="px-2.5 py-1.5 bg-slate-950 hover:bg-slate-800 text-blue-300 border border-blue-900/40 rounded-lg transition-all text-left truncate">
+            🤖 2024+ AI 혁명
+          </button>
+        </div>
+      </div>
+
+      <!-- Realtime Chart -->
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex flex-col gap-3 shadow-md">
+        <div class="flex items-center justify-between border-b border-slate-800 pb-2.5">
+          <h3 class="font-bold text-xs text-slate-200 flex items-center gap-1.5">
+            <i class="fa-solid fa-chart-line text-indigo-400"></i> 포트폴리오 모니터
+          </h3>
+          <div class="flex gap-1 bg-slate-950 p-1 rounded-lg border border-slate-800 text-[11px]">
+            <button onclick="switchChartTab('doughnut')" id="tabDoughnutBtn" class="px-2.5 py-0.5 rounded-md font-medium bg-indigo-600 text-white transition-all">자산 비중</button>
+            <button onclick="switchChartTab('line')" id="tabLineBtn" class="px-2.5 py-0.5 rounded-md font-medium text-slate-400 hover:text-slate-200 transition-all">자산 추이</button>
+          </div>
+        </div>
+
+        <div class="relative h-52 w-full flex items-center justify-center">
+          <div id="chartDoughnutWrapper" class="w-full h-full">
+            <canvas id="allocationChart"></canvas>
+          </div>
+          <div id="chartLineWrapper" class="w-full h-full hidden">
+            <canvas id="trendChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Activity Logs -->
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-3.5 flex flex-col gap-2">
+        <h3 class="font-bold text-xs text-slate-200 flex items-center gap-1.5">
+          <i class="fa-solid fa-clock-rotate-left text-slate-400"></i> 이벤트 및 매매 로그
+        </h3>
+        <div id="activityLog" class="h-28 overflow-y-auto pr-1 flex flex-col gap-1.5 text-[11px] font-mono">
+          <div class="text-slate-500 italic text-center py-4">시뮬레이션을 시작했습니다.</div>
+        </div>
+      </div>
+
+    </section>
+  </main>
+
+  <!-- TAB 2: 30초 스피드 단타 미니게임 (DAY TRADING BLITZ) -->
+  <main id="tabDaytrade" class="max-w-7xl mx-auto px-4 py-6 flex-grow hidden flex-col gap-5 w-full">
+    
+    <!-- Day Trading Banner -->
+    <div class="bg-gradient-to-r from-rose-950/80 via-slate-900 to-slate-950 border border-rose-500/40 rounded-3xl p-6 shadow-2xl relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-6">
+      <div class="flex items-center gap-4">
+        <div class="p-4 bg-rose-500/20 border-2 border-rose-500 text-rose-400 rounded-2xl text-3xl animate-pulse">
+          <i class="fa-solid fa-bolt-lightning"></i>
+        </div>
+        <div>
+          <div class="flex items-center gap-2 mb-1">
+            <span class="px-2.5 py-0.5 text-xs font-black bg-rose-500 text-white rounded-full">30초 타임어택</span>
+            <span class="text-xs text-slate-400 font-mono">초단타 모멘텀 거래소</span>
+          </div>
+          <h2 class="text-xl sm:text-2xl font-black text-white">30초 스피드 단타 미니게임 (Day Trading Blitz)</h2>
+          <p class="text-xs text-slate-300 mt-1">0.15초 단위로 요동치는 그래프를 보고 순발력 있게 매수/매도하여 극강의 시세 차익을 거두세요!</p>
+        </div>
+      </div>
+
+      <!-- Quick Controls & Balance -->
+      <div class="flex items-center gap-4 bg-slate-950/80 p-4 rounded-2xl border border-slate-800">
+        <div class="text-center px-3 border-r border-slate-800">
+          <div class="text-[10px] text-slate-400">투자 가능 현금</div>
+          <div id="dtBalanceText" class="text-sm font-black text-emerald-400">₩ 100,000,000</div>
+        </div>
+        <div class="text-center px-3 border-r border-slate-800">
+          <div class="text-[10px] text-slate-400">현재 포지션 PnL</div>
+          <div id="dtPositionPnl" class="text-sm font-black text-slate-400">₩ 0 (0.00%)</div>
+        </div>
+        <div>
+          <button id="btnStartDaytrade" onclick="startDayTradeGame()" class="px-5 py-3 bg-rose-600 hover:bg-rose-500 text-white font-black text-sm rounded-xl shadow-lg shadow-rose-950 transition-all active:scale-95 flex items-center gap-2">
+            <i class="fa-solid fa-play"></i>
+            <span>30초 단타 시작하기</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Day Trading Real-time Arena -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
+      
+      <!-- Realtime Candle Canvas Graph (8 Cols) -->
+      <div class="lg:col-span-8 bg-slate-900 border border-slate-800 rounded-3xl p-5 flex flex-col gap-4 relative">
+        
+        <!-- Live Hype Commentary Overlay Popup -->
+        <div id="hypeOverlay" class="absolute top-8 left-1/2 -translate-x-1/2 z-20 pointer-events-none transition-all duration-300 opacity-0 scale-75">
+          <span id="hypeOverlayText" class="px-4 py-2 rounded-2xl bg-gradient-to-r from-amber-500 to-rose-500 text-black font-black text-sm shadow-2xl border-2 border-white">
+            🚀 떡상 가즈아!!
+          </span>
+        </div>
+
+        <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+          <div class="flex items-center gap-3">
+            <span class="w-3 h-3 rounded-full bg-rose-500 animate-ping"></span>
+            <span class="font-extrabold text-sm text-white">가상 모멘텀 지수 (TICKER: #VOLATILITY-X)</span>
+            <span id="dtLeverageBadge" class="px-2 py-0.5 text-[10px] font-extrabold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 rounded">
+              배율: 1x (현물)
+            </span>
+          </div>
+
+          <div class="flex items-center gap-4 font-mono text-xs">
+            <div>남은 시간: <span id="dtTimerText" class="text-rose-400 font-extrabold text-sm">30.0s</span></div>
+            <div>현재가: <span id="dtCurrentPriceText" class="text-amber-400 font-bold text-sm">₩ 10,000</span></div>
+          </div>
+        </div>
+
+        <!-- Canvas Trading Arena -->
+        <div class="relative w-full h-72 bg-slate-950 rounded-2xl border border-slate-800 overflow-hidden p-2">
+          <canvas id="dayTradeCanvas" class="w-full h-full block"></canvas>
+        </div>
+
+        <!-- Leverage Selector -->
+        <div class="flex items-center justify-between bg-slate-950 p-3 rounded-2xl border border-slate-800 text-xs">
+          <span class="font-bold text-slate-300"><i class="fa-solid fa-gauge-high text-indigo-400 mr-1.5"></i>레버리지 배율 선택:</span>
+          <div class="flex gap-2 font-bold">
+            <button onclick="setLeverage(1)" id="lev1Btn" class="px-3 py-1 rounded-lg bg-indigo-600 text-white">1x (안전)</button>
+            <button onclick="setLeverage(2)" id="lev2Btn" class="px-3 py-1 rounded-lg bg-slate-800 text-slate-400 hover:text-white">2x (중위험)</button>
+            <button onclick="setLeverage(5)" id="lev5Btn" class="px-3 py-1 rounded-lg bg-slate-800 text-slate-400 hover:text-white">5x (초고위험 몰빵)</button>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Trading Action Controls (4 Cols) -->
+      <div class="lg:col-span-4 bg-slate-900 border border-slate-800 rounded-3xl p-5 flex flex-col justify-between gap-4">
+        <div>
+          <h3 class="font-bold text-sm text-white mb-1 border-b border-slate-800 pb-2">실시간 초단타 매매 주문</h3>
+          <p class="text-xs text-slate-400 mb-4">버튼을 클릭하여 포지션을 진입하고 익절/손절하세요.</p>
+
+          <div class="space-y-2.5 text-xs">
+            <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 space-y-1.5">
+              <div class="flex justify-between text-slate-400">
+                <span>진입 평균가</span>
+                <span id="dtEntryPrice" class="font-bold text-slate-200">미진입</span>
+              </div>
+              <div class="flex justify-between text-slate-400">
+                <span>보유 수량</span>
+                <span id="dtPositionShares" class="font-bold text-slate-200">0주</span>
+              </div>
+              <div class="flex justify-between text-slate-400">
+                <span>투입 금액</span>
+                <span id="dtInvestedCash" class="font-bold text-slate-200">₩ 0</span>
+              </div>
+            </div>
+
+            <!-- Trading Action Buttons -->
+            <div class="grid grid-cols-2 gap-2 pt-2">
+              <button onclick="dtBuy(50)" id="btnDtBuy50" disabled class="py-3 bg-emerald-600/50 text-slate-400 font-extrabold rounded-xl text-xs transition-all flex items-center justify-center gap-1">
+                <i class="fa-solid fa-arrow-trend-up"></i>
+                <span>매수 (50%)</span>
+              </button>
+              <button onclick="dtBuy(100)" id="btnDtBuyAll" disabled class="py-3 bg-emerald-600/50 text-slate-400 font-extrabold rounded-xl text-xs transition-all flex items-center justify-center gap-1">
+                <i class="fa-solid fa-fire"></i>
+                <span>💥 풀매수 (ALL-IN)</span>
+              </button>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2">
+              <button onclick="dtSell(50)" id="btnDtSell50" disabled class="py-3 bg-rose-600/50 text-slate-400 font-extrabold rounded-xl text-xs transition-all flex items-center justify-center gap-1">
+                <i class="fa-solid fa-arrow-trend-down"></i>
+                <span>분할 매도 (50%)</span>
+              </button>
+              <button onclick="dtSell(100)" id="btnDtSellAll" disabled class="py-3 bg-rose-600/50 text-slate-400 font-extrabold rounded-xl text-xs transition-all flex items-center justify-center gap-1">
+                <i class="fa-solid fa-sack-xmark"></i>
+                <span>💰 전량 청산 (익절/손절)</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Live Commentary Log -->
+        <div class="bg-slate-950 p-3 rounded-2xl border border-slate-800">
+          <span class="text-[10px] text-slate-500 font-mono block mb-1">단타 매매 중계 로그</span>
+          <div id="dtCommentaryLog" class="h-20 overflow-y-auto text-[11px] font-mono text-slate-300 space-y-1">
+            <div class="text-slate-600 italic">[시작하기] 버튼을 누르면 30초 단타 미니게임이 시작됩니다.</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- TAB 3: ACHIEVEMENTS & TITLES SHOWCASE -->
+  <main id="tabAchievements" class="max-w-7xl mx-auto px-4 py-6 flex-grow hidden flex-col gap-6 w-full">
+    <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-2xl flex flex-col gap-6">
+      
+      <div class="flex items-center justify-between border-b border-slate-800 pb-4">
+        <div class="flex items-center gap-3">
+          <div class="p-3 bg-amber-500/10 border border-amber-500/30 text-amber-400 rounded-xl">
+            <i class="fa-solid fa-trophy text-2xl"></i>
+          </div>
+          <div>
+            <h2 class="text-lg font-bold text-white">업적 명예의 전당 & 장착 칭호 (Achievements & Titles)</h2>
+            <p class="text-xs text-slate-400">투자 목표를 달성하고 화려한 네온 칭호를 획득하여 프로필을 꾸미세요.</p>
+          </div>
+        </div>
+        <div id="equippedTitleCard" class="px-4 py-2 bg-slate-950 rounded-2xl border border-amber-500/40 text-xs flex items-center gap-2">
+          <span class="text-slate-400">현재 장착중:</span>
+          <span id="equippedTitleText" class="font-black text-amber-400">【칭호 미장착】</span>
+        </div>
+      </div>
+
+      <!-- Achievements Grid -->
+      <div id="achievementsContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <!-- Dynamically rendered -->
+      </div>
+    </div>
+  </main>
+
+  <!-- TAB 4: VISUAL LUXURY SHOP -->
+  <main id="tabShop" class="max-w-7xl mx-auto px-4 py-6 flex-grow hidden flex-col gap-6 w-full">
+    
+    <!-- Character Prestige Banner with Image Portrait -->
+    <div class="bg-gradient-to-r from-slate-900 via-amber-950/40 to-slate-900 border border-amber-500/30 rounded-3xl p-6 shadow-2xl relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-6">
+      <div class="flex items-center gap-5">
+        <div class="relative w-24 h-24 rounded-2xl overflow-hidden border-2 border-amber-500/50 shadow-xl flex-shrink-0">
+          <img id="shopCharAvatarImg" src="https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=600&q=80" 
+               onerror="this.src='https://placehold.co/150x150/1e293b/f59e0b?text=User'"
+               alt="캐릭터 초상화" class="w-full h-full object-cover">
+        </div>
+        <div>
+          <div class="flex items-center gap-2 mb-1">
+            <span id="shopPrestigeTitle" class="px-3 py-0.5 text-xs font-extrabold bg-amber-500 text-black rounded-full uppercase tracking-wider">
+              동네 개미 투자자
+            </span>
+            <span id="shopCharArchetype" class="text-xs text-slate-400 font-mono">오마하의 가치 투자자</span>
+          </div>
+          <h2 class="text-xl sm:text-2xl font-black text-white">투자 자산가 라이프스타일 컬렉션</h2>
+          <p class="text-xs text-slate-300 mt-1">투자 수익금으로 하이엔드 사치품을 구매하고 과시 지수(Lifestyle Score)와 신분 등급을 상승시키세요.</p>
+        </div>
+      </div>
+
+      <!-- Stats Summary inside Shop -->
+      <div class="flex items-center gap-4 bg-slate-950/80 p-4 rounded-2xl border border-slate-800">
+        <div class="text-center px-3 border-r border-slate-800">
+          <div class="text-[10px] text-slate-400">보유 현금</div>
+          <div id="shopAvailableCash" class="text-sm font-extrabold text-emerald-400">₩ 100,000,000</div>
+        </div>
+        <div class="text-center px-3 border-r border-slate-800">
+          <div class="text-[10px] text-slate-400">총 사치품 자산</div>
+          <div id="shopTotalAssetVal" class="text-sm font-extrabold text-amber-400">₩ 0</div>
+        </div>
+        <div class="text-center px-3">
+          <div class="text-[10px] text-slate-400">과시 지수 (Vanity)</div>
+          <div id="shopVanityScore" class="text-sm font-extrabold text-indigo-400">0 pt</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Luxury Items Product Grid with Visual Photography -->
+    <div class="space-y-4">
+      <div class="flex items-center justify-between">
+        <h3 class="font-extrabold text-base text-white flex items-center gap-2">
+          <i class="fa-solid fa-store text-amber-400"></i> 사치품 카탈로그 (Tier 1 ~ Tier 5)
+        </h3>
+        <span class="text-xs text-slate-400">구매 시 즉시 현금이 차감되며 과시 지수가 반영됩니다.</span>
+      </div>
+
+      <div id="shopGridContainer" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <!-- Rendered dynamically by JS -->
+      </div>
+    </div>
+  </main>
+
+  <!-- TAB 5: VISUAL GARAGE & SHOWCASE GALLERY -->
+  <main id="tabGarage" class="max-w-7xl mx-auto px-4 py-6 flex-grow hidden flex-col gap-6 w-full">
+    <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-xl">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-4 mb-4">
+        <div class="flex items-center gap-3">
+          <div class="p-3 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 rounded-xl">
+            <i class="fa-solid fa-warehouse text-xl"></i>
+          </div>
+          <div>
+            <h2 class="text-lg font-bold text-white">내 수집품 갤러리 (My Collection Showcase)</h2>
+            <p class="text-xs text-slate-400">투자 성공을 입증하는 하이엔드 수집품 시각적 갤러리</p>
+          </div>
+        </div>
+        <span id="garageCountText" class="px-3 py-1 bg-slate-950 text-amber-400 font-mono text-xs rounded-lg border border-slate-800">
+          보유 품목: 0종
+        </span>
+      </div>
+
+      <!-- Garage Cards Grid -->
+      <div id="garageContainer" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <!-- Dynamically rendered -->
+      </div>
+    </div>
+  </main>
+
+  <!-- TAB 6: STUDENT REPORT GENERATOR -->
+  <main id="tabReport" class="max-w-7xl mx-auto px-4 py-6 flex-grow hidden flex-col gap-6 w-full">
+    <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-2xl flex flex-col gap-5">
+      
+      <div class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-800 pb-4">
+        <div class="flex items-center gap-3">
+          <div class="p-3 bg-indigo-500/10 border border-indigo-500/30 text-indigo-400 rounded-xl">
+            <i class="fa-solid fa-graduation-cap text-xl"></i>
+          </div>
+          <div>
+            <h2 class="text-lg font-bold text-white">경영학·재무학 탐구 보고서 (생기부 세특 제출용)</h2>
+            <p class="text-xs text-slate-400">거시경제 자산배분 + 초단타 미니게임 변동성 + 업적 달성 결과 기반 세특 합성</p>
+          </div>
+        </div>
+        <button onclick="copyNeisText()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs rounded-xl transition-all flex items-center gap-1.5 active:scale-95 shadow-lg shadow-indigo-950">
+          <i class="fa-solid fa-copy"></i>
+          <span>세특 기재용 문구 복사</span>
+        </button>
+      </div>
+
+      <!-- Report Content Preview Container -->
+      <div id="reportContent" class="space-y-4 text-xs text-slate-300">
+        <!-- Rendered by JS -->
+      </div>
+    </div>
+  </main>
+
+  <!-- Javascript Logic Engine -->
+  <script>
+    // -------------------------------------------------------------
+    // Global Constants & Characters
+    // -------------------------------------------------------------
+    const CHARACTERS = {
+      buffett: {
+        id: 'buffett',
+        name: '오마하의 가치 투자자',
+        title: '동네 개미 투자자',
+        img: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=600&q=80',
+        perkDesc: '배당/가치주 및 채권 이자 수익률 +1.5% 보너스',
+        startCash: 100000000
+      },
+      dalio: {
+        id: 'dalio',
+        name: '올웨더 헤지펀드 매니저',
+        title: '동네 개미 투자자',
+        img: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&w=600&q=80',
+        perkDesc: '거시경제 위기 충격 발생 시 손실률 -20% 방어',
+        startCash: 100000000
+      },
+      angel: {
+        id: 'angel',
+        name: '실리콘밸리 엔젤 투자자',
+        title: '동네 개미 투자자',
+        img: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=600&q=80',
+        perkDesc: '기술 성장주 상승 장세 시 +3.0% 추가 이득',
+        startCash: 100000000
+      },
+      trader: {
+        id: 'trader',
+        name: '월가 모멘텀 트레이더',
+        title: '동네 개미 투자자',
+        img: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=600&q=80',
+        perkDesc: '스피드 단타 미니게임 수익금에 +25% 추가 보너스',
+        startCash: 100000000
+      }
+    };
+
+    const LUXURY_ITEMS = [
+      { id: 'suit', tier: 1, name: '맞춤형 비스포크 테일러 수트', price: 10000000, points: 15, img: 'https://images.unsplash.com/photo-1594938298603-c8148c4dae35?auto=format&fit=crop&w=600&q=80', desc: '이탈리아 최고급 수제 비스포크 테일러링 수트' },
+      { id: 'watch', tier: 1, name: '럭셔리 명품 골드 타임피스', price: 25000000, points: 35, img: 'https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?auto=format&fit=crop&w=600&q=80', desc: '스위스 명가 크로노그래프 18K 골드 시계' },
+      { id: 'porsche', tier: 2, name: '독일 프리미엄 스포츠카', price: 200000000, points: 120, img: 'https://images.unsplash.com/photo-1614162692292-7ac56d7f7f1e?auto=format&fit=crop&w=600&q=80', desc: '독일 트랙 전용 명품 스포츠카' },
+      { id: 'ferrari', tier: 2, name: '플래그십 하이브리드 슈퍼카', price: 500000000, points: 350, img: 'https://images.unsplash.com/photo-1583121274602-3e2820c69888?auto=format&fit=crop&w=600&q=80', desc: '이탈리아 최상위 V8 레이싱 슈퍼카' },
+      { id: 'penthouse', tier: 3, name: '한강뷰 초고층 펜트하우스', price: 5000000000, points: 1500, img: 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=600&q=80', desc: '파노라마 한강 조망 하이엔드 주거공간' },
+      { id: 'jet', tier: 4, name: '전용 비즈니스 프라이빗 제트기', price: 40000000000, points: 10000, img: 'https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?auto=format&fit=crop&w=600&q=80', desc: '전 세계 무정차 직항 프라이빗 항공기' },
+      { id: 'yacht', tier: 4, name: '모나코 80미터 슈퍼 요트', price: 120000000000, points: 30000, img: 'https://images.unsplash.com/photo-1567899378494-47b22a2ae96a?auto=format&fit=crop&w=600&q=80', desc: '지중해 크루징용 메가 럭셔리 요트' },
+      { id: 'island', tier: 5, name: '몰디브 개인 소유 섬', price: 500000000000, points: 100000, img: 'https://images.unsplash.com/photo-1559128010-7c226949f088?auto=format&fit=crop&w=600&q=80', desc: '태평양 휴양지 프라이빗 아일랜드' }
+    ];
+
+    const ACHIEVEMENTS_DATA = [
+      { id: 'ALCHEMIST', title: '【연금술사】', icon: 'fa-wand-magic-sparkles', desc: '포트폴리오 수익률 +100% 이상 달성', condition: s => calculateTotalReturn(s) >= 100 },
+      { id: 'PHOENIX', title: '【불사조】', icon: 'fa-fire-sublime', desc: '대공황/위기 시나리오 경험 후 살아남기', condition: s => s.experiencedCrisis },
+      { id: 'YOUNG_RICH', title: '【영앤리치】', icon: 'fa-gem', desc: '사치품 5개 이상 구매 및 수집', condition: s => Object.values(s.ownedItems).reduce((a,b)=>a+b, 0) >= 5 },
+      { id: 'ALPHA_MALE', title: '【상남자】', icon: 'fa-skull-crossbones', desc: '단타 미니게임 풀매수(ALL-IN) 성공', condition: s => s.daytradeAllInWin },
+      { id: 'DAYTRADE_GOD', title: '【초단타 신의 손】', icon: 'fa-hand-lightning', desc: '단타 미니게임 연속 3회 이상 수익 청산', condition: s => s.daytradeWinStreak >= 3 },
+      { id: 'WALLST_TITAN', title: '【월가의 거물】', icon: 'fa-building-columns', desc: '총자산 100억원 돌파', condition: s => calculateTotalNetWorth() >= 10000000000 },
+      { id: 'ALL_ROUNDER', title: '【올라운더】', icon: 'fa-cubes', desc: '10대 포트폴리오 자산 전종목 보유', condition: s => Object.values(s.assets).every(a => a.shares > 0) }
+    ];
+
+    let state = {
+      character: CHARACTERS.buffett,
+      equippedTitle: null,
+      month: 1,
+      maxMonths: 24,
+      cash: 100000000,
+      initialCash: 100000000,
+      cpi: 100.0,
+      interestRate: 2.50,
+      inflationRate: 2.10,
+      peakNetWorth: 100000000,
+      mdd: 0,
+      vanityScore: 0,
+      ownedItems: {},
+      monthlyReturns: [],
+      unlockedAchievements: {},
+      experiencedCrisis: false,
+      daytradeAllInWin: false,
+      daytradeWinStreak: 0,
+      assets: {
+        tech: { key: 'tech', name: '미국 대형 기술주', badge: '고위험/고수익', badgeColor: 'bg-blue-500/20 text-blue-300 border-blue-500/30', price: 100000, shares: 0, avgPrice: 0, prevPrice: 100000, color: '#3b82f6', icon: 'fa-microchip', desc: '빅테크 성장주. 저금리 및 AI 붐 시 폭등하나 금리 상승 시 할인율 타격' },
+        value: { key: 'value', name: '가치/배당주', badge: '안정수익', badgeColor: 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30', price: 60000, shares: 0, avgPrice: 0, prevPrice: 60000, color: '#6366f1', icon: 'fa-coins', desc: '우수한 현금흐름과 높은 배당. 금리 인상기에도 방어력 우수' },
+        defensive: { key: 'defensive', name: '비상장 테크 ETF', badge: '혁신 벤처', badgeColor: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30', price: 50000, shares: 0, avgPrice: 0, prevPrice: 50000, color: '#10b981', icon: 'fa-rocket', desc: '초기 테크 스타트업 분산 투자. 경기 침체 시 방어 및 유동성 장세 보너스' },
+        bond_long: { key: 'bond_long', name: '미국 20년+ 장기국채', badge: '높은 듀레이션', badgeColor: 'bg-cyan-500/20 text-cyan-300 border-cyan-500/30', price: 40000, shares: 0, avgPrice: 0, prevPrice: 40000, color: '#06b6d4', icon: 'fa-file-contract', desc: '금리 인하(침체 대응) 시 강력한 자본 이득. 반면 긴축 시 가격 급락' },
+        bond_short: { key: 'bond_short', name: '단기국채 & MMF', badge: '무위험 현금성', badgeColor: 'bg-slate-500/20 text-slate-300 border-slate-500/30', price: 20000, shares: 0, avgPrice: 0, prevPrice: 20000, color: '#94a3b8', icon: 'fa-piggy-bank', desc: '듀레이션 위험이 거의 없으며 기준금리 연동 이자를 안정 지급' },
+        tips: { key: 'tips', name: '물가연동채 (TIPS)', badge: '물가 방어', badgeColor: 'bg-teal-500/20 text-teal-300 border-teal-500/30', price: 30000, shares: 0, avgPrice: 0, prevPrice: 30000, color: '#14b8a6', icon: 'fa-arrow-trend-up', desc: 'CPI 물가상승률만큼 원금이 증액되어 예측 못한 인플레이션 차단' },
+        gold: { key: 'gold', name: '금 & 귀금속', badge: '안전/실물자산', badgeColor: 'bg-amber-500/20 text-amber-300 border-amber-500/30', price: 50000, shares: 0, avgPrice: 0, prevPrice: 50000, color: '#f59e0b', icon: 'fa-gem', desc: '화폐 가치 하락, 스태그플레이션, 지정학적 위기 시 대표 안전 자산' },
+        commodities: { key: 'commodities', name: '원유 & 원자재', badge: '인플레이션 원인', badgeColor: 'bg-orange-500/20 text-orange-300 border-orange-500/30', price: 35000, shares: 0, avgPrice: 0, prevPrice: 35000, color: '#ea580c', icon: 'fa-fire', desc: '공급망 차단 시 가격 폭등. 스태그플레이션의 핵심 주역 자산' },
+        reits: { key: 'reits', name: '글로벌 리츠', badge: '부동산 임대', badgeColor: 'bg-purple-500/20 text-purple-300 border-purple-500/30', price: 45000, shares: 0, avgPrice: 0, prevPrice: 45000, color: '#8b5cf6', icon: 'fa-building', desc: '상업용 부동산. 유동성 장세 호조이나 고금리 시 부채 부담 가중' },
+        crypto: { key: 'crypto', name: '암호화폐/디지털자산', badge: '초고위험/모멘텀', badgeColor: 'bg-pink-500/20 text-pink-300 border-pink-500/30', price: 25000, shares: 0, avgPrice: 0, prevPrice: 25000, color: '#ec4899', icon: 'fa-coins', desc: '유동성 유입 및 기술 모멘텀 시 극단적 폭등, 금리 인상 시 큰 변동성' }
+      },
+      history: {
+        labels: ['1년 1월'],
+        totalNetWorth: [100000000],
+        realNetWorth: [100000000]
+      },
+      currentEvent: null
+    };
+
+    const MACRO_EVENTS = {
+      GREAT_DEPRESSION: {
+        title: "1929급 대공황 & 신용 마비", badge: "대위협: 극심한 경기 침체", badgeStyle: "bg-red-600/30 text-red-200 border-red-500/40",
+        desc: "전 세계적인 신용 경색과 기업 부도가 발생합니다. 단기국채와 MMF로 자금이 집중됩니다.", rates: { interest: -2.00, inflation: -2.00 },
+        impacts: { tech: -0.45, value: -0.30, defensive: -0.15, bond_long: +0.25, bond_short: +0.02, tips: -0.15, gold: +0.15, commodities: -0.35, reits: -0.40, crypto: -0.55 }
+      },
+      STAGFLATION: {
+        title: "1970s 스태그플레이션 & 오일쇼크", badge: "대위협: 고물가/저성장", badgeStyle: "bg-amber-500/20 text-amber-300 border-amber-500/30",
+        desc: "원유 및 원자재 가격이 폭등하고 물가가 인상됩니다. 원자재, 금, TIPS 자산이 상승합니다.", rates: { interest: +2.00, inflation: +5.00 },
+        impacts: { tech: -0.28, value: -0.05, defensive: +0.02, bond_long: -0.25, bond_short: +0.03, tips: +0.25, gold: +0.35, commodities: +0.50, reits: -0.18, crypto: -0.25 }
+      },
+      FINANCIAL_CRISIS: {
+        title: "2008 글로벌 금융위기 사태", badge: "위험: 서프라임 신용 경색", badgeStyle: "bg-rose-500/20 text-rose-300 border-rose-500/30",
+        desc: "부동산 및 금융 기관 리스크로 자산 시장 전반이 위기에 빠집니다. 국채와 현금이 방어선 역할을 합니다.", rates: { interest: -2.50, inflation: -1.00 },
+        impacts: { tech: -0.38, value: -0.28, defensive: -0.10, bond_long: +0.22, bond_short: +0.02, tips: -0.08, gold: +0.12, commodities: -0.30, reits: -0.38, crypto: -0.45 }
+      },
+      LIQUIDITY_BOOM: {
+        title: "2020 코로나 무제한 양적완화(QE)", badge: "호재: 파격 유동성 공급", badgeStyle: "bg-emerald-500/20 text-emerald-300 border-emerald-500/30",
+        desc: "시중에 막대한 유동성이 공급되며 대형 성장주, 디지털자산, 리츠 등 위험 자산이 폭등합니다.", rates: { interest: -1.25, inflation: +1.50 },
+        impacts: { tech: +0.35, value: +0.20, defensive: +0.15, bond_long: +0.10, bond_short: +0.01, tips: +0.08, gold: +0.15, commodities: +0.20, reits: +0.30, crypto: +0.50 }
+      },
+      RATE_HIKE_SHOCK: {
+        title: "2022 긴축 발작 & 고금리 쇼크", badge: "위험: 빅스텝 금리 인상", badgeStyle: "bg-orange-500/20 text-orange-300 border-orange-500/30",
+        desc: "인플레이션 억제를 위한 급격한 금리 인상으로 장기채, 기술 성장주, 디지털자산이 하락합니다.", rates: { interest: +1.75, inflation: +1.00 },
+        impacts: { tech: -0.25, value: +0.05, defensive: +0.02, bond_long: -0.22, bond_short: +0.03, tips: +0.10, gold: -0.05, commodities: +0.10, reits: -0.25, crypto: -0.35 }
+      },
+      AI_BOOM: {
+        title: "2024+ AI 혁명 & 기술주 붐", badge: "호재: 생산성 혁신", badgeStyle: "bg-blue-500/20 text-blue-300 border-blue-500/30",
+        desc: "생성형 AI 생태계 확장으로 미국 대형 기술주와 벤처 ETF로 자금이 쏠리며 급등합니다.", rates: { interest: +0.25, inflation: +0.30 },
+        impacts: { tech: +0.42, value: +0.08, defensive: +0.20, bond_long: -0.05, bond_short: +0.02, tips: +0.01, gold: +0.02, commodities: +0.05, reits: +0.08, crypto: +0.25 }
+      },
+      GOLDILOCKS: {
+        title: "안정적 골디락스 성숙 국면", badge: "중립: 온화한 성장", badgeStyle: "bg-slate-700 text-slate-300 border-slate-600",
+        desc: "적정한 물가와 금리가 유지되며 자산 시장이 완만하고 안정적인 상승을 보입니다.", rates: { interest: 0.00, inflation: +0.10 },
+        impacts: { tech: +0.08, value: +0.06, defensive: +0.04, bond_long: +0.03, bond_short: +0.02, tips: +0.02, gold: +0.02, commodities: +0.03, reits: +0.06, crypto: +0.10 }
+      }
+    };
+
+    const SCHEDULED_EVENTS = { 3: MACRO_EVENTS.AI_BOOM, 7: MACRO_EVENTS.RATE_HIKE_SHOCK, 11: MACRO_EVENTS.STAGFLATION, 15: MACRO_EVENTS.FINANCIAL_CRISIS, 19: MACRO_EVENTS.LIQUIDITY_BOOM, 23: MACRO_EVENTS.GOLDILOCKS };
+
+    let allocationChart = null;
+    let trendChart = null;
+
+    // Day Trading State Variables
+    let dtTimer = null;
+    let dtSecondsLeft = 30.0;
+    let dtPrice = 10000;
+    let dtHistory = [];
+    let dtLeverage = 1;
+    let dtPosition = { shares: 0, entryPrice: 0, investedCash: 0, isAllIn: false };
+    let dtIsRunning = false;
+
+    // -------------------------------------------------------------
+    // Lifecycle & Initialization
+    // -------------------------------------------------------------
+    window.onload = function() {
+      renderAssetCards();
+      renderShopGrid();
+      renderGarageGrid();
+      renderAchievementsGrid();
+      initCharts();
+      initDayTradeCanvas();
+      updateDashboardUI();
+    };
+
+    function selectCharacter(charId) {
+      const char = CHARACTERS[charId];
+      if (!char) return;
+
+      state.character = char;
+      state.cash = char.startCash;
+      state.initialCash = char.startCash;
+      state.peakNetWorth = char.startCash;
+      state.history.totalNetWorth = [char.startCash];
+      state.history.realNetWorth = [char.startCash];
+
+      document.getElementById('charSelectModal').classList.add('hidden');
+      
+      document.getElementById('charHeaderImg').src = char.img;
+      document.getElementById('shopCharAvatarImg').src = char.img;
+      document.getElementById('charNameText').innerText = char.name;
+      document.getElementById('shopCharArchetype').innerText = char.name;
+      document.getElementById('charDescSub').innerText = `캐릭터: ${char.name} (${char.perkDesc})`;
+
+      updateDashboardUI();
+      logActivity(`투자자 캐릭터 [${char.name}]를 선택했습니다.`, "info");
+      showToast(`${char.name} 캐릭터 선택 완료!`, "success");
+    }
+
+    function openCharModal() {
+      document.getElementById('charSelectModal').classList.remove('hidden');
+    }
+
+    function getPrestigeTitle(score, netWorth) {
+      if (netWorth >= 500000000000 || score >= 50000) return "세계적 부호 (Global Billionaire)";
+      if (netWorth >= 50000000000 || score >= 10000) return "월가의 거물 (Wall St Titan)";
+      if (netWorth >= 10000000000 || score >= 2000) return "신흥 재벌 (Emerging Tycoon)";
+      if (netWorth >= 1000000000 || score >= 300) return "강남 자산가 (High Net Worth)";
+      if (netWorth >= 300000000 || score >= 50) return "여의도 펀드매니저";
+      return "동네 개미 투자자";
+    }
+
+    function calculateTotalReturn(s) {
+      const total = calculateTotalNetWorth();
+      return ((total - s.initialCash) / s.initialCash) * 100;
+    }
+
+    // -------------------------------------------------------------
+    // FEATURE #3: 30초 스피드 단타 미니게임 (DAY TRADING BLITZ)
+    // -------------------------------------------------------------
+    function initDayTradeCanvas() {
+      const canvas = document.getElementById('dayTradeCanvas');
+      if (!canvas) return;
+      canvas.width = canvas.parentElement.clientWidth;
+      canvas.height = canvas.parentElement.clientHeight;
+      drawDayTradeCanvas();
+    }
+
+    function setLeverage(lev) {
+      if (dtIsRunning) return;
+      dtLeverage = lev;
+      ['1', '2', '5'].forEach(l => {
+        const btn = document.getElementById(`lev${l}Btn`);
+        if (btn) btn.className = l == lev ? "px-3 py-1 rounded-lg bg-indigo-600 text-white" : "px-3 py-1 rounded-lg bg-slate-800 text-slate-400 hover:text-white";
+      });
+      document.getElementById('dtLeverageBadge').innerText = `배율: ${lev}x (${lev === 1 ? '현물' : lev === 2 ? '신용 대출' : '초고위험 레버리지'})`;
+    }
+
+    function startDayTradeGame() {
+      if (dtIsRunning) return;
+      if (state.cash < 10000) {
+        showToast("단타에 투입할 최소 현금(₩10,000)이 부족합니다.", "warning");
+        return;
+      }
+
+      dtIsRunning = true;
+      dtSecondsLeft = 30.0;
+      dtPrice = 10000;
+      dtHistory = [dtPrice];
+      dtPosition = { shares: 0, entryPrice: 0, investedCash: 0, isAllIn: false };
+
+      // Enable Trading Buttons
+      document.getElementById('btnDtBuy50').disabled = false;
+      document.getElementById('btnDtBuyAll').disabled = false;
+      document.getElementById('btnDtSell50').disabled = false;
+      document.getElementById('btnDtSellAll').disabled = false;
+
+      [ 'btnDtBuy50', 'btnDtBuyAll' ].forEach(id => {
+        document.getElementById(id).className = "py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-black rounded-xl text-xs transition-all active:scale-95 shadow-lg shadow-emerald-950 flex items-center justify-center gap-1";
+      });
+      [ 'btnDtSell50', 'btnDtSellAll' ].forEach(id => {
+        document.getElementById(id).className = "py-3 bg-rose-600 hover:bg-rose-500 text-white font-black rounded-xl text-xs transition-all active:scale-95 shadow-lg shadow-rose-950 flex items-center justify-center gap-1";
+      });
+
+      document.getElementById('btnStartDaytrade').disabled = true;
+      document.getElementById('btnStartDaytrade').className = "px-5 py-3 bg-slate-800 text-slate-500 font-bold text-sm rounded-xl cursor-not-allowed";
+
+      dtCommentLog("⚡ [30초 스피드 단타 미니게임 개장!] 차트 변동 시작!", "emerald");
+      showToast("30초 스피드 단타 개장! 그래프를 보고 빠른 매매를 하세요!", "info");
+
+      if (dtTimer) clearInterval(dtTimer);
+      dtTimer = setInterval(tickDayTrade, 150);
+    }
+
+    function tickDayTrade() {
+      dtSecondsLeft -= 0.15;
+      if (dtSecondsLeft <= 0) {
+        dtSecondsLeft = 0;
+        endDayTradeGame();
+        return;
+      }
+
+      // Generate Wild Price Fluctuation (-8% to +8.5%)
+      const volatility = 0.085;
+      const deltaPercent = (Math.random() - 0.48) * volatility;
+      dtPrice = Math.max(500, Math.round(dtPrice * (1 + deltaPercent)));
+      dtHistory.push(dtPrice);
+      if (dtHistory.length > 80) dtHistory.shift();
+
+      // Live Hype commentary
+      if (deltaPercent > 0.04) triggerHypeOverlay("🚀 떡상 가즈아!! 폭등 중!", "amber");
+      else if (deltaPercent < -0.04) triggerHypeOverlay("📉 떡락이다 돔황차!!", "rose");
+
+      updateDayTradeUI();
+      drawDayTradeCanvas();
+    }
+
+    function triggerHypeOverlay(text, color) {
+      const el = document.getElementById('hypeOverlay');
+      const textEl = document.getElementById('hypeOverlayText');
+      if (!el || !textEl) return;
+
+      textEl.innerText = text;
+      if (color === 'amber') textEl.className = "px-4 py-2 rounded-2xl bg-gradient-to-r from-amber-500 to-yellow-400 text-black font-black text-sm shadow-2xl border-2 border-white animate-bounce";
+      else textEl.className = "px-4 py-2 rounded-2xl bg-gradient-to-r from-rose-600 to-red-500 text-white font-black text-sm shadow-2xl border-2 border-white animate-bounce";
+
+      el.classList.remove('opacity-0', 'scale-75');
+      el.classList.add('opacity-100', 'scale-100');
+
+      setTimeout(() => {
+        el.classList.add('opacity-0', 'scale-75');
+        el.classList.remove('opacity-100', 'scale-100');
+      }, 600);
+    }
+
+    function dtBuy(percent) {
+      if (!dtIsRunning) return;
+      const availableCash = state.cash;
+      const spendAmount = availableCash * (percent / 100);
+
+      if (spendAmount < 1000) {
+        showToast("매수 가능한 현금이 없습니다.", "warning");
+        return;
+      }
+
+      const sharesToBuy = (spendAmount * dtLeverage) / dtPrice;
+      dtPosition.shares += sharesToBuy;
+      dtPosition.investedCash += spendAmount;
+      dtPosition.entryPrice = dtPrice;
+      if (percent === 100) dtPosition.isAllIn = true;
+
+      state.cash -= spendAmount;
+
+      dtCommentLog(`📈 [매수] ₩${Math.round(spendAmount).toLocaleString()} 진입! (단가: ₩${dtPrice.toLocaleString()})`, "emerald");
+      updateDashboardUI();
+      updateDayTradeUI();
+    }
+
+    function dtSell(percent) {
+      if (!dtIsRunning || dtPosition.shares <= 0) {
+        showToast("청산할 포지션이 없습니다.", "warning");
+        return;
+      }
+
+      const sharesToSell = dtPosition.shares * (percent / 100);
+      const rawValue = sharesToSell * dtPrice;
+      const initialCost = (dtPosition.investedCash * (percent / 100)) * dtLeverage;
+      let profit = rawValue - initialCost;
+
+      // Character Trader Passive Bonus
+      if (state.character.id === 'trader' && profit > 0) {
+        profit *= 1.25; // +25% day trade bonus
+      }
+
+      const returnAmount = (dtPosition.investedCash * (percent / 100)) + profit;
+      state.cash += Math.max(0, returnAmount);
+
+      if (profit > 0) {
+        state.daytradeWinStreak++;
+        if (dtPosition.isAllIn) state.daytradeAllInWin = true;
+        dtCommentLog(`💰 [익절 청산!] +₩${Math.round(profit).toLocaleString()} 수익 확정!`, "emerald");
+      } else {
+        state.daytradeWinStreak = 0;
+        dtCommentLog(`📉 [손절 청산] -₩${Math.round(Math.abs(profit)).toLocaleString()} 손실 확정`, "rose");
+      }
+
+      dtPosition.shares -= sharesToSell;
+      dtPosition.investedCash -= (dtPosition.investedCash * (percent / 100));
+
+      if (dtPosition.shares <= 0.001) {
+        dtPosition.shares = 0;
+        dtPosition.investedCash = 0;
+        dtPosition.entryPrice = 0;
+      }
+
+      checkAchievements();
+      updateDashboardUI();
+      updateDayTradeUI();
+    }
+
+    function endDayTradeGame() {
+      clearInterval(dtTimer);
+      dtIsRunning = false;
+
+      // Force liquidating remaining position at final price
+      if (dtPosition.shares > 0) {
+        dtSell(100);
+      }
+
+      document.getElementById('btnStartDaytrade').disabled = false;
+      document.getElementById('btnStartDaytrade').className = "px-5 py-3 bg-rose-600 hover:bg-rose-500 text-white font-black text-sm rounded-xl shadow-lg shadow-rose-950 transition-all active:scale-95 flex items-center gap-2";
+
+      ['btnDtBuy50', 'btnDtBuyAll', 'btnDtSell50', 'btnDtSellAll'].forEach(id => {
+        document.getElementById(id).disabled = true;
+        document.getElementById(id).className = "py-3 bg-slate-800 text-slate-500 font-bold rounded-xl text-xs cursor-not-allowed flex items-center justify-center gap-1";
+      });
+
+      dtCommentLog("🏁 [단타 미니게임 종료] 모든 포지션이 정산되었습니다.", "amber");
+      showToast("30초 단타 미니게임이 종료되었습니다!", "success");
+      checkAchievements();
+      updateDashboardUI();
+    }
+
+    function updateDayTradeUI() {
+      document.getElementById('dtTimerText').innerText = `${dtSecondsLeft.toFixed(1)}s`;
+      document.getElementById('dtCurrentPriceText').innerText = `₩ ${dtPrice.toLocaleString()}`;
+      document.getElementById('dtBalanceText').innerText = `₩ ${Math.round(state.cash).toLocaleString()}`;
+
+      document.getElementById('dtEntryPrice').innerText = dtPosition.shares > 0 ? `₩ ${dtPosition.entryPrice.toLocaleString()}` : '미진입';
+      document.getElementById('dtPositionShares').innerText = `${dtPosition.shares.toFixed(2)}주`;
+      document.getElementById('dtInvestedCash').innerText = `₩ ${Math.round(dtPosition.investedCash).toLocaleString()}`;
+
+      if (dtPosition.shares > 0) {
+        const rawValue = dtPosition.shares * dtPrice;
+        const initialCost = dtPosition.investedCash * dtLeverage;
+        const pnl = rawValue - initialCost;
+        const pnlPercent = (pnl / dtPosition.investedCash) * 100;
+
+        const pnlEl = document.getElementById('dtPositionPnl');
+        pnlEl.innerText = `${pnl >= 0 ? '+' : ''}₩ ${Math.round(pnl).toLocaleString()} (${pnlPercent.toFixed(2)}%)`;
+        pnlEl.className = `text-sm font-black ${pnl >= 0 ? 'text-emerald-400' : 'text-rose-400'}`;
+      } else {
+        document.getElementById('dtPositionPnl').innerText = '₩ 0 (0.00%)';
+        document.getElementById('dtPositionPnl').className = 'text-sm font-black text-slate-400';
+      }
+    }
+
+    function drawDayTradeCanvas() {
+      const canvas = document.getElementById('dayTradeCanvas');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      const w = canvas.width;
+      const h = canvas.height;
+
+      ctx.clearRect(0, 0, w, h);
+
+      if (dtHistory.length < 2) return;
+
+      const minVal = Math.min(...dtHistory) * 0.98;
+      const maxVal = Math.max(...dtHistory) * 1.02;
+
+      ctx.beginPath();
+      ctx.strokeStyle = dtHistory[dtHistory.length - 1] >= dtHistory[0] ? '#10b981' : '#f43f5e';
+      ctx.lineWidth = 3;
+
+      const stepX = w / Math.max(1, dtHistory.length - 1);
+
+      dtHistory.forEach((val, idx) => {
+        const x = idx * stepX;
+        const y = h - ((val - minVal) / (maxVal - minVal)) * h;
+        if (idx === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      });
+      ctx.stroke();
+
+      // Pulsing current price dot
+      const lastX = (dtHistory.length - 1) * stepX;
+      const lastY = h - ((dtHistory[dtHistory.length - 1] - minVal) / (maxVal - minVal)) * h;
+
+      ctx.beginPath();
+      ctx.arc(lastX, lastY, 6, 0, Math.PI * 2);
+      ctx.fillStyle = '#fbbf24';
+      ctx.fill();
+    }
+
+    function dtCommentLog(msg, color) {
+      const log = document.getElementById('dtCommentaryLog');
+      const div = document.createElement('div');
+      div.className = color === 'emerald' ? 'text-emerald-400 font-semibold' : color === 'rose' ? 'text-rose-400 font-semibold' : 'text-amber-300 font-semibold';
+      div.innerText = msg;
+      log.insertBefore(div, log.firstChild);
+    }
+
+    // -------------------------------------------------------------
+    // FEATURE #4: 화려한 칭호 & 도전과제 (ACHIEVEMENT SYSTEM)
+    // -------------------------------------------------------------
+    function renderAchievementsGrid() {
+      const container = document.getElementById('achievementsContainer');
+      container.innerHTML = '';
+
+      let count = 0;
+
+      ACHIEVEMENTS_DATA.forEach(ach => {
+        const isUnlocked = !!state.unlockedAchievements[ach.id];
+        if (isUnlocked) count++;
+
+        const isEquipped = state.equippedTitle === ach.title;
+
+        const card = document.createElement('div');
+        card.className = `p-4 rounded-2xl border transition-all flex flex-col justify-between ${isUnlocked ? 'bg-gradient-to-br from-slate-900 via-amber-950/30 to-slate-950 border-amber-500/60 shadow-xl' : 'bg-slate-950/60 border-slate-800/80 opacity-70'}`;
+
+        card.innerHTML = `
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-xl ${isUnlocked ? 'text-amber-400' : 'text-slate-600'}">
+                <i class="fa-solid ${ach.icon}"></i>
+              </span>
+              <span class="px-2 py-0.5 text-[10px] font-black rounded-full ${isUnlocked ? 'bg-amber-500 text-black' : 'bg-slate-800 text-slate-500'}">
+                ${isUnlocked ? '달성 완료' : '잠김'}
+              </span>
+            </div>
+            <h4 class="font-extrabold text-sm text-white mb-1">${ach.title}</h4>
+            <p class="text-xs text-slate-400 leading-snug mb-3">${ach.desc}</p>
+          </div>
+
+          <div class="pt-2 border-t border-slate-800/80">
+            ${isUnlocked ? `
+              <button onclick="equipTitle('${ach.title}')" class="w-full py-1.5 rounded-xl font-extrabold text-xs transition-all ${isEquipped ? 'bg-amber-500 text-black shadow-lg' : 'bg-slate-800 hover:bg-slate-700 text-slate-200'}">
+                ${isEquipped ? '✓ 장착중' : '칭호 장착하기'}
+              </button>
+            ` : `
+              <div class="w-full bg-slate-900 h-1.5 rounded-full overflow-hidden">
+                <div class="bg-slate-700 h-full w-0"></div>
+              </div>
+            `}
+          </div>
+        `;
+        container.appendChild(card);
+      });
+
+      document.getElementById('achieveUnlockedCount').innerText = `${count}/${ACHIEVEMENTS_DATA.length}`;
+    }
+
+    function checkAchievements() {
+      ACHIEVEMENTS_DATA.forEach(ach => {
+        if (!state.unlockedAchievements[ach.id] && ach.condition(state)) {
+          state.unlockedAchievements[ach.id] = true;
+          triggerAchievementModal(ach);
+        }
+      });
+      renderAchievementsGrid();
+    }
+
+    function triggerAchievementModal(ach) {
+      document.getElementById('achieveModalTitle').innerText = ach.title;
+      document.getElementById('achieveModalDesc').innerText = ach.desc;
+      document.getElementById('achieveModalIcon').className = `fa-solid ${ach.icon}`;
+
+      const modal = document.getElementById('achievementModal');
+      const box = document.getElementById('achievementBox');
+
+      modal.classList.remove('hidden');
+      setTimeout(() => {
+        box.classList.remove('scale-95', 'opacity-0');
+        box.classList.add('scale-100', 'opacity-100');
+      }, 10);
+    }
+
+    function closeAchievementModal() {
+      const modal = document.getElementById('achievementModal');
+      const box = document.getElementById('achievementBox');
+
+      box.classList.remove('scale-100', 'opacity-100');
+      box.classList.add('scale-95', 'opacity-0');
+      setTimeout(() => modal.classList.add('hidden'), 300);
+    }
+
+    function equipTitle(title) {
+      state.equippedTitle = title;
+      document.getElementById('equippedTitleTag').innerText = title;
+      document.getElementById('equippedTitleTag').classList.remove('hidden');
+      document.getElementById('equippedTitleText').innerText = title;
+
+      renderAchievementsGrid();
+      showToast(`칭호 [${title}]을(를) 프로필에 장착했습니다!`, "success");
+    }
+
+    // -------------------------------------------------------------
+    // Core Trading & Asset Management
+    // -------------------------------------------------------------
+    function buyAsset(key, percent) {
+      const asset = state.assets[key];
+      const spendAmount = state.cash * (percent / 100);
+
+      if (spendAmount < 1000) {
+        showToast("매수 가능한 현금이 부족합니다.", "warning");
+        return;
+      }
+
+      const sharesToBuy = spendAmount / asset.price;
+      const newTotalShares = asset.shares + sharesToBuy;
+      const newTotalCost = (asset.shares * asset.avgPrice) + spendAmount;
+      
+      asset.shares = newTotalShares;
+      asset.avgPrice = newTotalCost / newTotalShares;
+      state.cash -= spendAmount;
+
+      logActivity(`[매수] ${asset.name}: ₩${Math.round(spendAmount).toLocaleString()} (${sharesToBuy.toFixed(2)}주)`, "buy");
+      showToast(`${asset.name} 매수 완료`, "success");
+      checkAchievements();
+      updateDashboardUI();
+    }
+
+    function sellAsset(key, percent) {
+      const asset = state.assets[key];
+      if (asset.shares <= 0) {
+        showToast("매도할 보유 수량이 없습니다.", "warning");
+        return;
+      }
+
+      const sharesToSell = asset.shares * (percent / 100);
+      const revenue = sharesToSell * asset.price;
+
+      asset.shares -= sharesToSell;
+      state.cash += revenue;
+
+      if (asset.shares <= 0.0001) {
+        asset.shares = 0;
+        asset.avgPrice = 0;
+      }
+
+      logActivity(`[매도] ${asset.name}: ₩${Math.round(revenue).toLocaleString()} (${sharesToSell.toFixed(2)}주)`, "sell");
+      showToast(`${asset.name} 매도 완료`, "info");
+      checkAchievements();
+      updateDashboardUI();
+    }
+
+    function applyPreset(presetType) {
+      Object.values(state.assets).forEach(a => {
+        state.cash += (a.shares * a.price);
+        a.shares = 0;
+        a.avgPrice = 0;
+      });
+
+      let ratios = {};
+      if (presetType === 'all_weather') {
+        ratios = { tech: 0.15, bond_long: 0.30, bond_short: 0.15, gold: 0.15, commodities: 0.10, tips: 0.10, crypto: 0.05 };
+      } else if (presetType === 'growth_tech') {
+        ratios = { tech: 0.50, defensive: 0.20, crypto: 0.15, reits: 0.15 };
+      } else if (presetType === 'stagflation_proof') {
+        ratios = { commodities: 0.35, gold: 0.25, tips: 0.25, value: 0.15 };
+      } else if (presetType === 'safe_haven') {
+        ratios = { bond_short: 0.50, bond_long: 0.25, defensive: 0.15, gold: 0.10 };
+      }
+
+      const availableToInvest = state.cash;
+      Object.entries(ratios).forEach(([k, r]) => {
+        const amt = availableToInvest * r;
+        state.assets[k].shares = amt / state.assets[k].price;
+        state.assets[k].avgPrice = state.assets[k].price;
+        state.cash -= amt;
+      });
+
+      logActivity(`포트폴리오 프리셋 적용: [${presetType}]`, "event");
+      showToast("포트폴리오가 리밸런싱되었습니다.", "success");
+      checkAchievements();
+      updateDashboardUI();
+    }
+
+    function triggerScenario(presetKey) {
+      const event = MACRO_EVENTS[presetKey];
+      if (event) executeScenario(event);
+    }
+
+    function nextMonth() {
+      if (state.month >= state.maxMonths) {
+        showToast("시뮬레이션 기간(24개월)이 완료되었습니다. 생기부 보고서를 확인하세요!", "success");
+        switchTab('report');
+        return;
+      }
+      state.month++;
+
+      let event = SCHEDULED_EVENTS[state.month];
+      if (!event) {
+        const rand = Math.random();
+        if (rand < 0.5) event = MACRO_EVENTS.GOLDILOCKS;
+        else if (rand < 0.65) event = MACRO_EVENTS.RATE_HIKE_SHOCK;
+        else if (rand < 0.75) event = MACRO_EVENTS.AI_BOOM;
+        else if (rand < 0.85) event = MACRO_EVENTS.STAGFLATION;
+        else if (rand < 0.93) event = MACRO_EVENTS.LIQUIDITY_BOOM;
+        else event = MACRO_EVENTS.FINANCIAL_CRISIS;
+      }
+
+      executeScenario(event);
+    }
+
+    function executeScenario(event) {
+      state.currentEvent = event;
+      if (['GREAT_DEPRESSION', 'STAGFLATION', 'FINANCIAL_CRISIS'].includes(Object.keys(MACRO_EVENTS).find(k => MACRO_EVENTS[k] === event))) {
+        state.experiencedCrisis = true;
+      }
+
+      state.interestRate = Math.max(0.25, parseFloat((state.interestRate + event.rates.interest).toFixed(2)));
+      state.inflationRate = Math.max(0.1, parseFloat((state.inflationRate + event.rates.inflation).toFixed(2)));
+      state.cpi += (state.inflationRate / 12);
+
+      Object.keys(state.assets).forEach(key => {
+        const asset = state.assets[key];
+        asset.prevPrice = asset.price;
+
+        let baseImpact = event.impacts[key] || 0;
+
+        if (state.character.id === 'dalio' && baseImpact < 0) {
+          baseImpact *= 0.80;
+        }
+        if (state.character.id === 'angel' && (key === 'tech' || key === 'defensive') && baseImpact > 0) {
+          baseImpact += 0.03;
+        }
+
+        const noise = (Math.random() - 0.5) * 0.03;
+        const totalChangeRate = baseImpact + noise;
+
+        asset.price = Math.max(1000, Math.round(asset.price * (1 + totalChangeRate)));
+      });
+
+      let buffettBonus = state.character.id === 'buffett' ? 0.0015 : 0;
+      const cashInterest = state.cash * (state.interestRate / 100 / 12);
+      const shortBondYield = (state.assets.bond_short.shares * state.assets.bond_short.price) * ((state.interestRate / 100 / 12) + buffettBonus);
+      const tipsYield = (state.assets.tips.shares * state.assets.tips.price) * (state.inflationRate / 100 / 12);
+      const dividendYield = (state.assets.value.shares * state.assets.value.price) * (0.004 + buffettBonus);
+      const reitsYield = (state.assets.reits.shares * state.assets.reits.price) * 0.005;
+
+      const totalPassiveYield = cashInterest + shortBondYield + tipsYield + dividendYield + reitsYield;
+      state.cash += totalPassiveYield;
+
+      const prevTotalNetWorth = state.history.totalNetWorth[state.history.totalNetWorth.length - 1] || state.initialCash;
+      const totalNetWorth = calculateTotalNetWorth();
+      const realNetWorth = totalNetWorth / (state.cpi / 100.0);
+
+      const monthlyReturn = (totalNetWorth - prevTotalNetWorth) / prevTotalNetWorth;
+      state.monthlyReturns.push(monthlyReturn);
+
+      if (totalNetWorth > state.peakNetWorth) state.peakNetWorth = totalNetWorth;
+      const currentDrawdown = ((state.peakNetWorth - totalNetWorth) / state.peakNetWorth) * 100;
+      if (currentDrawdown > state.mdd) state.mdd = currentDrawdown;
+
+      const year = Math.ceil(state.month / 12);
+      const m = state.month % 12 === 0 ? 12 : state.month % 12;
+      const label = `${year}년 ${m}월`;
+
+      state.history.labels.push(label);
+      state.history.totalNetWorth.push(totalNetWorth);
+      state.history.realNetWorth.push(Math.round(realNetWorth));
+
+      logActivity(`[${label}] ${event.title} (수익/배당 +₩${Math.round(totalPassiveYield).toLocaleString()})`, "event");
+      checkAchievements();
+      updateDashboardUI();
+      showToast(`${label}: ${event.title}`, "info");
+    }
+
+    // -------------------------------------------------------------
+    // Asset Cards & Luxury Shop Rendering
+    // -------------------------------------------------------------
+    function renderAssetCards() {
+      const container = document.getElementById('assetCardsContainer');
+      container.innerHTML = '';
+
+      Object.values(state.assets).forEach(asset => {
+        const card = document.createElement('div');
+        card.className = "bg-slate-900 border border-slate-800 rounded-2xl p-3.5 flex flex-col justify-between hover:border-slate-700 transition-all shadow-md";
+        
+        card.innerHTML = `
+          <div>
+            <div class="flex items-start justify-between mb-1.5">
+              <div class="flex items-center gap-2">
+                <div class="w-8 h-8 rounded-lg flex items-center justify-center text-white" style="background-color: ${asset.color}20; color: ${asset.color}">
+                  <i class="fa-solid ${asset.icon} text-sm"></i>
+                </div>
+                <div>
+                  <h3 class="font-bold text-xs text-white leading-snug">${asset.name}</h3>
+                  <span class="px-1.5 py-0.2 text-[9px] font-semibold rounded border ${asset.badgeColor}">
+                    ${asset.badge}
+                  </span>
+                </div>
+              </div>
+            </div>
+            <p class="text-[10px] text-slate-400 mb-2.5 leading-snug h-7 overflow-hidden">${asset.desc}</p>
+            <div class="bg-slate-950 p-2 rounded-xl border border-slate-800/80 mb-2.5">
+              <div class="flex items-baseline justify-between">
+                <span class="text-[10px] text-slate-400">현재 단가</span>
+                <span id="price_${asset.key}" class="text-xs font-bold text-white">₩ ${asset.price.toLocaleString()}</span>
+              </div>
+              <div class="flex items-center justify-between text-[10px] mt-0.5">
+                <span class="text-slate-500">전월 대비</span>
+                <span id="change_${asset.key}" class="font-semibold text-slate-400">0.00%</span>
+              </div>
+            </div>
+            <div class="text-[11px] space-y-0.5 mb-3 border-t border-slate-800/60 pt-1.5">
+              <div class="flex justify-between text-slate-300">
+                <span>보유 수량:</span>
+                <span id="shares_${asset.key}" class="font-medium">0주</span>
+              </div>
+              <div class="flex justify-between text-slate-300">
+                <span>평가 금액:</span>
+                <span id="val_${asset.key}" class="font-bold text-white">₩ 0</span>
+              </div>
+              <div class="flex justify-between text-slate-400">
+                <span>평단가/수익률:</span>
+                <span id="return_${asset.key}">-</span>
+              </div>
+            </div>
+          </div>
+          <div class="grid grid-cols-4 gap-1 pt-2 border-t border-slate-800">
+            <button onclick="buyAsset('${asset.key}', 25)" class="py-1 bg-emerald-950/40 hover:bg-emerald-800/60 text-emerald-300 border border-emerald-700/40 rounded text-[10px] font-semibold transition-all">25%</button>
+            <button onclick="buyAsset('${asset.key}', 50)" class="py-1 bg-emerald-950/40 hover:bg-emerald-800/60 text-emerald-300 border border-emerald-700/40 rounded text-[10px] font-semibold transition-all">50%</button>
+            <button onclick="buyAsset('${asset.key}', 100)" class="py-1 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded text-[10px] transition-all">MAX</button>
+            <button onclick="sellAsset('${asset.key}', 100)" class="py-1 bg-rose-950/40 hover:bg-rose-800/60 text-rose-300 border border-rose-700/40 rounded text-[10px] font-semibold transition-all">전량매도</button>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    function renderShopGrid() {
+      const container = document.getElementById('shopGridContainer');
+      container.innerHTML = '';
+
+      LUXURY_ITEMS.forEach(item => {
+        const count = state.ownedItems[item.id] || 0;
+        const isOwned = count > 0;
+        const card = document.createElement('div');
+        card.className = `group bg-slate-900 border rounded-2xl overflow-hidden flex flex-col justify-between transition-all duration-300 ${isOwned ? 'border-amber-500/60 bg-gradient-to-b from-amber-950/20 to-slate-900' : 'border-slate-800 hover:border-slate-700'}`;
+
+        card.innerHTML = `
+          <div>
+            <div class="relative h-44 w-full overflow-hidden bg-slate-950">
+              <img src="${item.img}" 
+                   onerror="this.src='https://placehold.co/600x400/1e293b/f59e0b?text=Luxury+Asset'"
+                   alt="${item.name}" 
+                   class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110">
+              <div class="absolute inset-0 bg-gradient-to-t from-slate-900 via-transparent to-transparent"></div>
+              
+              <div class="absolute top-2.5 left-2.5 flex gap-1">
+                <span class="px-2 py-0.5 text-[10px] font-extrabold rounded bg-slate-950/80 text-amber-300 border border-amber-500/40 backdrop-blur-md">
+                  Tier ${item.tier}
+                </span>
+              </div>
+
+              <div class="absolute top-2.5 right-2.5">
+                <span class="px-2 py-0.5 text-[10px] font-extrabold rounded bg-indigo-950/80 text-indigo-300 border border-indigo-500/40 backdrop-blur-md">
+                  +${item.points} pt
+                </span>
+              </div>
+            </div>
+
+            <div class="p-3.5">
+              <h4 class="font-bold text-sm text-white mb-1 group-hover:text-amber-300 transition-colors">${item.name}</h4>
+              <p class="text-[11px] text-slate-400 leading-snug mb-3 h-8 overflow-hidden">${item.desc}</p>
+              
+              <div class="bg-slate-950 p-2.5 rounded-xl border border-slate-800/80 space-y-1 text-xs mb-3">
+                <div class="flex justify-between text-slate-300">
+                  <span class="text-[10px] text-slate-400">가격</span>
+                  <span class="font-bold text-emerald-400">₩ ${(item.price / 10000).toLocaleString()}만원</span>
+                </div>
+                <div class="flex justify-between text-slate-400 text-[10px]">
+                  <span>수집 수량</span>
+                  <span class="font-semibold text-amber-300">${count}개 보유 중</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="p-3.5 pt-0">
+            <button onclick="buyLuxuryItem('${item.id}')" ${state.cash < item.price ? 'disabled' : ''} class="w-full py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${isOwned ? 'bg-amber-500 hover:bg-amber-400 text-black shadow-lg shadow-amber-950' : state.cash >= item.price ? 'bg-indigo-600 hover:bg-indigo-500 text-white' : 'bg-slate-800 text-slate-500 cursor-not-allowed'}">
+              <i class="fa-solid ${isOwned ? 'fa-cart-plus' : 'fa-gem'}"></i>
+              <span>${isOwned ? `추가 구매 (${count}개)` : '사치품 구매하기'}</span>
+            </button>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    function renderGarageGrid() {
+      const container = document.getElementById('garageContainer');
+      const ownedKeys = Object.keys(state.ownedItems).filter(k => state.ownedItems[k] > 0);
+
+      document.getElementById('garageCountText').innerText = `보유 품목: ${ownedKeys.length}종`;
+
+      if (ownedKeys.length === 0) {
+        container.innerHTML = `
+          <div class="col-span-full py-12 flex flex-col items-center justify-center text-center text-slate-500 gap-3">
+            <div class="w-16 h-16 rounded-full bg-slate-950 border border-slate-800 flex items-center justify-center text-2xl text-slate-600">
+              <i class="fa-solid fa-box-open"></i>
+            </div>
+            <div>
+              <p class="text-sm font-bold text-slate-400">아직 수집된 럭셔리 품목이 없습니다.</p>
+              <p class="text-xs text-slate-600 mt-0.5">사치품 상점에서 투자 수익금으로 멋진 가치를 수집해보세요!</p>
+            </div>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = '';
+      ownedKeys.forEach(k => {
+        const item = LUXURY_ITEMS.find(i => i.id === k);
+        const count = state.ownedItems[k];
+        const card = document.createElement('div');
+        card.className = "bg-slate-950 border border-amber-500/40 rounded-2xl overflow-hidden shadow-xl flex flex-col justify-between";
+
+        card.innerHTML = `
+          <div>
+            <div class="relative h-40 w-full overflow-hidden">
+              <img src="${item.img}" 
+                   onerror="this.src='https://placehold.co/600x400/1e293b/f59e0b?text=Luxury+Asset'"
+                   alt="${item.name}" class="w-full h-full object-cover">
+              <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent"></div>
+              <span class="absolute top-2.5 right-2.5 px-2.5 py-1 rounded-lg bg-amber-500 text-black text-xs font-black shadow-lg">
+                x${count}개
+              </span>
+            </div>
+            <div class="p-3.5">
+              <h4 class="font-bold text-sm text-white mb-1">${item.name}</h4>
+              <p class="text-xs text-slate-400 mb-2">${item.desc}</p>
+              <div class="flex justify-between text-xs text-slate-300 pt-2 border-t border-slate-900">
+                <span class="text-slate-500">누적 가치:</span>
+                <span class="font-bold text-amber-400">₩ ${((item.price * count) / 10000).toLocaleString()}만원</span>
+              </div>
+            </div>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    function buyLuxuryItem(itemId) {
+      const item = LUXURY_ITEMS.find(i => i.id === itemId);
+      if (!item) return;
+
+      if (state.cash < item.price) {
+        showToast("구매 현금이 부족합니다. 자산 투자 수익을 먼저 창출하세요!", "warning");
+        return;
+      }
+
+      state.cash -= item.price;
+      state.vanityScore += item.points;
+      state.ownedItems[item.id] = (state.ownedItems[item.id] || 0) + 1;
+
+      logActivity(`[사치품 구매] ${item.name} (₩${(item.price/10000).toLocaleString()}만원, +${item.points}pt)`, "event");
+      showToast(`🎉 ${item.name} 구매 완료! 과시 지수 +${item.points}pt`, "success");
+
+      checkAchievements();
+      renderShopGrid();
+      renderGarageGrid();
+      updateDashboardUI();
+    }
+
+    // -------------------------------------------------------------
+    // Metrics & Calculations
+    // -------------------------------------------------------------
+    function calculateTotalNetWorth() {
+      let assetSum = 0;
+      Object.values(state.assets).forEach(asset => {
+        assetSum += (asset.shares * asset.price);
+      });
+      return state.cash + assetSum;
+    }
+
+    function calculateLuxuryTotalVal() {
+      let sum = 0;
+      Object.entries(state.ownedItems).forEach(([id, count]) => {
+        const item = LUXURY_ITEMS.find(i => i.id === id);
+        if (item) sum += item.price * count;
+      });
+      return sum;
+    }
+
+    function calculateSharpeRatio() {
+      if (state.monthlyReturns.length < 2) return 0;
+      const avgReturn = state.monthlyReturns.reduce((a, b) => a + b, 0) / state.monthlyReturns.length;
+      const variance = state.monthlyReturns.reduce((a, b) => a + Math.pow(b - avgReturn, 2), 0) / state.monthlyReturns.length;
+      const stdDev = Math.sqrt(variance);
+      const monthlyRiskFree = (state.interestRate / 100 / 12);
+      if (stdDev === 0) return 0;
+      return Math.max(-3, Math.min(5, parseFloat(((avgReturn - monthlyRiskFree) / stdDev * Math.sqrt(12)).toFixed(2))));
+    }
+
+    // -------------------------------------------------------------
+    // UI Synchronizer
+    // -------------------------------------------------------------
+    function updateDashboardUI() {
+      const totalNetWorth = calculateTotalNetWorth();
+      const realNetWorth = totalNetWorth / (state.cpi / 100.0);
+      const nominalReturn = ((totalNetWorth - state.initialCash) / state.initialCash) * 100;
+      const realReturn = ((realNetWorth - state.initialCash) / state.initialCash) * 100;
+      const sharpe = calculateSharpeRatio();
+      const prestigeTitle = getPrestigeTitle(state.vanityScore, totalNetWorth);
+
+      document.getElementById('charTitleBadge').innerText = prestigeTitle;
+      document.getElementById('shopPrestigeTitle').innerText = prestigeTitle;
+
+      document.getElementById('uiTotalNetWorth').innerText = `₩ ${Math.round(totalNetWorth).toLocaleString()}`;
+      document.getElementById('uiTotalReturn').innerText = `수익률 ${nominalReturn >= 0 ? '+' : ''}${nominalReturn.toFixed(2)}%`;
+      document.getElementById('uiTotalReturn').className = `text-[10px] font-semibold mt-0.5 ${nominalReturn >= 0 ? 'text-emerald-400' : 'text-rose-400'}`;
+
+      document.getElementById('uiRealNetWorth').innerText = `₩ ${Math.round(realNetWorth).toLocaleString()}`;
+      document.getElementById('uiRealReturn').innerText = `실질 ${realReturn >= 0 ? '+' : ''}${realReturn.toFixed(2)}%`;
+
+      document.getElementById('uiCash').innerText = `₩ ${Math.round(state.cash).toLocaleString()}`;
+      document.getElementById('uiCashRatio').innerText = `비중 ${((state.cash / totalNetWorth) * 100).toFixed(1)}%`;
+
+      document.getElementById('uiVanityScore').innerText = `${state.vanityScore} pt`;
+      document.getElementById('uiPrestigeLevel').innerText = prestigeTitle;
+
+      document.getElementById('uiMonth').innerText = `${state.month} / ${state.maxMonths} 개월`;
+      document.getElementById('uiMonthBar').style.width = `${(state.month / state.maxMonths) * 100}%`;
+
+      document.getElementById('uiInterestRate').innerText = `${state.interestRate.toFixed(2)}%`;
+      document.getElementById('uiInflationRate').innerText = `${state.inflationRate.toFixed(2)}%`;
+      document.getElementById('uiCpi').innerText = `CPI ${state.cpi.toFixed(1)}`;
+
+      document.getElementById('uiSharpe').innerText = sharpe.toFixed(2);
+      document.getElementById('uiMDDText').innerText = `MDD -${state.mdd.toFixed(2)}%`;
+
+      document.getElementById('shopAvailableCash').innerText = `₩ ${Math.round(state.cash).toLocaleString()}`;
+      document.getElementById('shopTotalAssetVal').innerText = `₩ ${Math.round(calculateLuxuryTotalVal()).toLocaleString()}`;
+      document.getElementById('shopVanityScore').innerText = `${state.vanityScore} pt`;
+
+      Object.values(state.assets).forEach(asset => {
+        const priceEl = document.getElementById(`price_${asset.key}`);
+        if (priceEl) priceEl.innerText = `₩ ${asset.price.toLocaleString()}`;
+        
+        const pctChange = ((asset.price - asset.prevPrice) / asset.prevPrice) * 100;
+        const changeEl = document.getElementById(`change_${asset.key}`);
+        if (changeEl) {
+          changeEl.innerText = `${pctChange >= 0 ? '+' : ''}${pctChange.toFixed(2)}%`;
+          changeEl.className = `font-semibold text-[10px] ${pctChange >= 0 ? 'text-emerald-400' : 'text-rose-400'}`;
+        }
+
+        const sharesEl = document.getElementById(`shares_${asset.key}`);
+        if (sharesEl) sharesEl.innerText = `${asset.shares.toFixed(2)}주`;
+        
+        const totalVal = asset.shares * asset.price;
+        const valEl = document.getElementById(`val_${asset.key}`);
+        if (valEl) valEl.innerText = `₩ ${Math.round(totalVal).toLocaleString()}`;
+
+        const retEl = document.getElementById(`return_${asset.key}`);
+        if (retEl) {
+          if (asset.shares > 0 && asset.avgPrice > 0) {
+            const assetReturn = ((asset.price - asset.avgPrice) / asset.avgPrice) * 100;
+            retEl.innerText = `₩${Math.round(asset.avgPrice).toLocaleString()} (${assetReturn >= 0 ? '+' : ''}${assetReturn.toFixed(1)}%)`;
+            retEl.className = assetReturn >= 0 ? 'text-emerald-400 font-medium' : 'text-rose-400 font-medium';
+          } else {
+            retEl.innerText = `-`;
+            retEl.className = 'text-slate-500';
+          }
+        }
+      });
+
+      if (state.currentEvent) {
+        const ev = state.currentEvent;
+        document.getElementById('eventTitle').innerText = ev.title;
+        document.getElementById('eventDesc').innerText = ev.desc;
+        document.getElementById('eventBadge').innerText = ev.badge;
+        document.getElementById('eventBadge').className = `px-2.5 py-0.5 text-xs font-bold rounded-md border ${ev.badgeStyle}`;
+
+        const year = Math.ceil(state.month / 12);
+        const m = state.month % 12 === 0 ? 12 : state.month % 12;
+        document.getElementById('eventDate').innerText = `${year}년차 ${m}월`;
+      }
+
+      updateCharts();
+      renderStudentReport();
+    }
+
+    // -------------------------------------------------------------
+    // Charts Integration
+    // -------------------------------------------------------------
+    function initCharts() {
+      const ctxDoughnut = document.getElementById('allocationChart').getContext('2d');
+      allocationChart = new Chart(ctxDoughnut, {
+        type: 'doughnut',
+        data: {
+          labels: ['미국 기술주', '가치/배당주', '비상장 ETF', '장기국채', '단기채', 'TIPS', '금', '원자재', '리츠', '크립토', '현금'],
+          datasets: [{
+            data: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, state.cash],
+            backgroundColor: ['#3b82f6', '#6366f1', '#10b981', '#06b6d4', '#94a3b8', '#14b8a6', '#f59e0b', '#ea580c', '#8b5cf6', '#ec4899', '#475569'],
+            borderWidth: 0
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { position: 'right', labels: { color: '#94a3b8', font: { size: 9 }, boxWidth: 8 } } }
+        }
+      });
+
+      const ctxLine = document.getElementById('trendChart').getContext('2d');
+      trendChart = new Chart(ctxLine, {
+        type: 'line',
+        data: {
+          labels: state.history.labels,
+          datasets: [
+            { label: '명목 총자산', data: state.history.totalNetWorth, borderColor: '#10b981', fill: false, tension: 0.3 },
+            { label: '실질 자산 (CPI)', data: state.history.realNetWorth, borderColor: '#818cf8', borderDash: [4, 4], fill: false, tension: 0.3 }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            x: { ticks: { color: '#64748b', font: { size: 9 } } },
+            y: { ticks: { color: '#64748b', font: { size: 9 } } }
+          },
+          plugins: { legend: { labels: { color: '#94a3b8', font: { size: 9 } } } }
+        }
+      });
+    }
+
+    function updateCharts() {
+      if (!allocationChart || !trendChart) return;
+
+      const assetValues = [
+        state.assets.tech.shares * state.assets.tech.price,
+        state.assets.value.shares * state.assets.value.price,
+        state.assets.defensive.shares * state.assets.defensive.price,
+        state.assets.bond_long.shares * state.assets.bond_long.price,
+        state.assets.bond_short.shares * state.assets.bond_short.price,
+        state.assets.tips.shares * state.assets.tips.price,
+        state.assets.gold.shares * state.assets.gold.price,
+        state.assets.commodities.shares * state.assets.commodities.price,
+        state.assets.reits.shares * state.assets.reits.price,
+        state.assets.crypto.shares * state.assets.crypto.price,
+        state.cash
+      ];
+      allocationChart.data.datasets[0].data = assetValues;
+      allocationChart.update();
+
+      trendChart.data.labels = state.history.labels;
+      trendChart.data.datasets[0].data = state.history.totalNetWorth;
+      trendChart.data.datasets[1].data = state.history.realNetWorth;
+      trendChart.update();
+    }
+
+    function switchChartTab(type) {
+      const dWrapper = document.getElementById('chartDoughnutWrapper');
+      const lWrapper = document.getElementById('chartLineWrapper');
+      const bD = document.getElementById('tabDoughnutBtn');
+      const bL = document.getElementById('tabLineBtn');
+
+      if (type === 'doughnut') {
+        dWrapper.classList.remove('hidden');
+        lWrapper.classList.add('hidden');
+        bD.className = "px-2.5 py-0.5 rounded-md font-medium bg-indigo-600 text-white transition-all";
+        bL.className = "px-2.5 py-0.5 rounded-md font-medium text-slate-400 hover:text-slate-200 transition-all";
+      } else {
+        lWrapper.classList.remove('hidden');
+        dWrapper.classList.add('hidden');
+        bL.className = "px-2.5 py-0.5 rounded-md font-medium bg-indigo-600 text-white transition-all";
+        bD.className = "px-2.5 py-0.5 rounded-md font-medium text-slate-400 hover:text-slate-200 transition-all";
+      }
+    }
+
+    // -------------------------------------------------------------
+    // Tab Navigation & Student Report
+    // -------------------------------------------------------------
+    function switchTab(tabId) {
+      ['Dashboard', 'Daytrade', 'Achievements', 'Shop', 'Garage', 'Report'].forEach(t => {
+        const el = document.getElementById(`tab${t}`);
+        if (el) el.classList.add('hidden');
+
+        const btn = document.getElementById(`nav${t.substring(0, 4)}Btn`) || document.getElementById(`nav${t}Btn`);
+        if (btn) btn.className = "px-3 py-1.5 rounded-lg text-slate-400 hover:text-white transition-all flex items-center gap-1.5 whitespace-nowrap";
+      });
+
+      if (tabId === 'dashboard') {
+        document.getElementById('tabDashboard').classList.remove('hidden');
+        document.getElementById('navDashBtn').className = "px-3 py-1.5 rounded-lg bg-indigo-600 text-white transition-all flex items-center gap-1.5 font-bold whitespace-nowrap";
+      } else if (tabId === 'daytrade') {
+        document.getElementById('tabDaytrade').classList.remove('hidden');
+        document.getElementById('navDaytradeBtn').className = "px-3 py-1.5 rounded-lg bg-rose-600 text-white transition-all flex items-center gap-1.5 font-bold whitespace-nowrap";
+        setTimeout(initDayTradeCanvas, 50);
+      } else if (tabId === 'achievements') {
+        document.getElementById('tabAchievements').classList.remove('hidden');
+        document.getElementById('navAchieveBtn').className = "px-3 py-1.5 rounded-lg bg-amber-600 text-white transition-all flex items-center gap-1.5 font-bold whitespace-nowrap";
+      } else if (tabId === 'shop') {
+        document.getElementById('tabShop').classList.remove('hidden');
+        document.getElementById('navShopBtn').className = "px-3 py-1.5 rounded-lg bg-amber-600 text-white transition-all flex items-center gap-1.5 font-bold whitespace-nowrap";
+      } else if (tabId === 'garage') {
+        document.getElementById('tabGarage').classList.remove('hidden');
+        document.getElementById('navGarageBtn').className = "px-3 py-1.5 rounded-lg bg-emerald-600 text-white transition-all flex items-center gap-1.5 font-bold whitespace-nowrap";
+      } else if (tabId === 'report') {
+        document.getElementById('tabReport').classList.remove('hidden');
+        document.getElementById('navReportBtn').className = "px-3 py-1.5 rounded-lg bg-indigo-600 text-white transition-all flex items-center gap-1.5 font-bold whitespace-nowrap";
+      }
+    }
+
+    function renderStudentReport() {
+      const container = document.getElementById('reportContent');
+      const totalNetWorth = calculateTotalNetWorth();
+      const realNetWorth = totalNetWorth / (state.cpi / 100.0);
+      const nominalReturn = ((totalNetWorth - state.initialCash) / state.initialCash) * 100;
+      const realReturn = ((realNetWorth - state.initialCash) / state.initialCash) * 100;
+      const sharpe = calculateSharpeRatio();
+      const prestigeTitle = getPrestigeTitle(state.vanityScore, totalNetWorth);
+
+      const unlockedTitlesList = Object.keys(state.unlockedAchievements).map(k => {
+        const ach = ACHIEVEMENTS_DATA.find(a => a.id === k);
+        return ach ? ach.title : '';
+      }).filter(Boolean).join(', ') || '없음';
+
+      const reportMarkdown = `
+        <div class="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-3">
+          <div class="flex items-center justify-between">
+            <span class="font-bold text-indigo-400 text-sm">탐구 주제: 거시경제 시나리오 자산배분 모델링 및 30초 초단타 변동성 메커니즘의 행동재무학적 분석</span>
+            <span class="text-[11px] text-slate-500 font-mono">선택 캐릭터: ${state.character.name}</span>
+          </div>
+
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2 border-t border-slate-800 text-[11px]">
+            <div>명목 수익률: <span class="font-bold text-emerald-400">${nominalReturn >= 0 ? '+' : ''}${nominalReturn.toFixed(2)}%</span></div>
+            <div>실질 수익률: <span class="font-bold text-indigo-400">${realReturn >= 0 ? '+' : ''}${realReturn.toFixed(2)}%</span></div>
+            <div>샤프 지수: <span class="font-bold text-amber-400">${sharpe}</span></div>
+            <div>달성 업적: <span class="font-bold text-amber-300">${unlockedTitlesList}</span></div>
+          </div>
+
+          <div class="pt-2 text-xs space-y-2 leading-relaxed">
+            <p><strong>1. 거시경제 및 포트폴리오 이론 실증:</strong> 수업 시간에 배운 현대 포트폴리오 이론(MPT)을 적용하여, 스태그플레이션 및 긴축 금리 인상 시기 원유, 금, TIPS, MMF 자산군의 위험 방어 메커니즘을 분석하고 최대 낙폭(MDD -${state.mdd.toFixed(2)}%)을 정량 관측함.</p>
+            <p><strong>2. 30초 단타 미니게임과 행동재무학적 접근:</strong> 0.15초 단위의 초단타 변동성 거래소 미니게임을 수용하며 레버리지(1x~5x) 투입 시 투자자의 손실 회피(Loss Aversion) 및 FOMO 반응을 시뮬레이션하고, 합리적 이익 실현(Take Profit)의 수학적 기대값을 산출함.</p>
+            <p><strong>3. 업적 연동 및 자기주도적 성과 (과시 지수 ${state.vanityScore}pt):</strong> 장착 칭호 [${state.equippedTitle || '칭호 미장착'}] 및 달성한 칭호 명예의 전당 성과를 통해 자산 증대 및 신분 등급(${prestigeTitle}) 상승이 주는 경영학적 기회비용과 자원 배분 효용을 확인함.</p>
+          </div>
+
+          <div class="mt-3 p-3 bg-indigo-950/40 rounded-xl border border-indigo-500/30">
+            <span class="font-bold text-indigo-200 text-xs block mb-1">📌 [교세특 입력 추천 문구]</span>
+            <div id="neisCopyText" class="text-[11px] font-mono text-slate-200 leading-relaxed select-all">
+'거시경제 자산배분 & 스피드 단타 시뮬레이터 4.0'을 활용하여 10대 다변화 자산 포트폴리오 운용 및 초단타 변동성 미니게임 프로젝트를 주도적으로 수행함. '${state.character.name}' 페르소나를 선택하여 총 명목 수익률 ${nominalReturn.toFixed(2)}%, 샤프 지수 ${sharpe}, 최대 낙폭 -${state.mdd.toFixed(2)}%를 달성함. 30초 스피드 단타 미니게임에서 레버리지 배율에 따른 위험 대비 수익을 정량 측정하며 행동재무학적 편향을 극복하고, 업적 [${unlockedTitlesList}] 및 과시 지수 ${state.vanityScore}pt(${prestigeTitle})를 달성함으로써 데이터 기반 금융 의사결정과 위험 관리 역량을 탁월하게 증명함.
+            </div>
+          </div>
+        </div>
+      `;
+      container.innerHTML = reportMarkdown;
+    }
+
+    function copyNeisText() {
+      const text = document.getElementById('neisCopyText').innerText;
+      const textarea = document.createElement('textarea');
+      textarea.value = text;
+      textarea.style.position = 'fixed';
+      textarea.style.opacity = '0';
+      document.body.appendChild(textarea);
+      textarea.select();
+      try {
+        document.execCommand('copy');
+        showToast("생기부 세특 문구가 클립보드에 복사되었습니다!", "success");
+      } catch (e) {
+        showToast("복사 실패. 직접 선택하여 복사하세요.", "warning");
+      } finally {
+        document.body.removeChild(textarea);
+      }
+    }
+
+    // -------------------------------------------------------------
+    // Utility Helpers
+    // -------------------------------------------------------------
+    function logActivity(text, type = "info") {
+      const container = document.getElementById('activityLog');
+      const entry = document.createElement('div');
+      let borderStyle = "border-l-2 border-slate-600 text-slate-300";
+      if (type === "buy") borderStyle = "border-l-2 border-emerald-500 text-emerald-300 bg-emerald-950/20";
+      if (type === "sell") borderStyle = "border-l-2 border-rose-500 text-rose-300 bg-rose-950/20";
+      if (type === "event") borderStyle = "border-l-2 border-amber-500 text-amber-300 bg-amber-950/20";
+
+      entry.className = `pl-2 py-0.5 ${borderStyle} text-[10px] leading-tight rounded-r`;
+      entry.innerText = text;
+      container.insertBefore(entry, container.firstChild);
+    }
+
+    function showToast(message, type = 'info') {
+      const container = document.getElementById('toastContainer');
+      const toast = document.createElement('div');
+      let bgStyle = 'bg-slate-800 text-slate-100 border-slate-700';
+      if (type === 'success') bgStyle = 'bg-emerald-950 border-emerald-700 text-emerald-200';
+      if (type === 'warning') bgStyle = 'bg-amber-950 border-amber-700 text-amber-200';
+      if (type === 'info') bgStyle = 'bg-indigo-950 border-indigo-700 text-indigo-200';
+
+      toast.className = `px-3.5 py-2 rounded-xl border shadow-2xl text-xs font-medium backdrop-blur-md transition-all duration-300 transform translate-y-2 opacity-0 flex items-center gap-2 ${bgStyle}`;
+      toast.innerHTML = `<span>${message}</span>`;
+      container.appendChild(toast);
+
+      setTimeout(() => { toast.classList.remove('translate-y-2', 'opacity-0'); }, 10);
+      setTimeout(() => {
+        toast.classList.add('opacity-0', '-translate-y-2');
+        setTimeout(() => toast.remove(), 300);
+      }, 3000);
+    }
+
+    function resetGame() {
+      state.month = 1;
+      state.cash = state.character.startCash;
+      state.initialCash = state.character.startCash;
+      state.cpi = 100.0;
+      state.interestRate = 2.50;
+      state.inflationRate = 2.10;
+      state.peakNetWorth = state.character.startCash;
+      state.mdd = 0;
+      state.vanityScore = 0;
+      state.ownedItems = {};
+      state.monthlyReturns = [];
+      state.unlockedAchievements = {};
+      state.equippedTitle = null;
+      state.experiencedCrisis = false;
+      state.daytradeAllInWin = false;
+      state.daytradeWinStreak = 0;
+      state.history = { labels: ['1년 1월'], totalNetWorth: [state.character.startCash], realNetWorth: [state.character.startCash] };
+
+      document.getElementById('equippedTitleTag').classList.add('hidden');
+
+      const initPrices = { tech: 100000, value: 60000, defensive: 50000, bond_long: 40000, bond_short: 20000, tips: 30000, gold: 50000, commodities: 35000, reits: 45000, crypto: 25000 };
+      Object.values(state.assets).forEach(a => {
+        a.shares = 0;
+        a.avgPrice = 0;
+        a.price = initPrices[a.key] || 30000;
+        a.prevPrice = a.price;
+      });
+
+      document.getElementById('activityLog').innerHTML = '<div class="text-slate-500 italic text-center py-4">게임이 초기화되었습니다.</div>';
+      renderShopGrid();
+      renderGarageGrid();
+      renderAchievementsGrid();
+      updateDashboardUI();
+      showToast("시뮬레이션이 초기화되었습니다.", "info");
+    }
+  </script>
+</body>
+</html>
